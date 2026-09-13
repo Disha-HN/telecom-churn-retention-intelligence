@@ -5,11 +5,7 @@ system for telecom businesses.
 
 [Python] [LightGBM] [LangChain] [Groq] [Streamlit]
 
-┌─────────────────────────────────────────────────────────────┐
-│                                                             │
-│   Predict churn → Understand behavior → Prioritize → Act   │
-│                                                             │
-└─────────────────────────────────────────────────────────────┘
+#{Predict churn → Understand behavior → Prioritize → Act}
 
 ## 🎯 What is this?
 
