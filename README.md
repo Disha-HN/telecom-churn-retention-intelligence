@@ -1,27 +1,37 @@
 # 📡 Telecom Churn Retention Intelligence
 
-> **Predict Churn • Understand Behavior • Prioritize Customers • Recommend Action**
+> **Predict Churn • Understand Behavior • Prioritize Customers • Guide Retention Action**
 
-An AI-assisted telecom customer retention system that combines **machine learning, behavioral intelligence, customer value analysis, retention prioritization, and a natural-language AI agent** to help identify customers who are most likely to churn and determine who should be prioritized for retention.
+An AI-assisted telecom customer retention decision-support system that combines **machine learning, behavioral intelligence, customer value analysis, retention prioritization, candidate action routing, and a natural-language AI agent**.
+
+The system moves beyond traditional churn prediction by helping answer not only **who is likely to churn**, but also **what behavioral signals support the risk, which customers deserve greater retention attention, and what retention issue should be reviewed**.
+
+🌐 **Live Application:** `https://telecom-churn-retention-intelligence-mlihtcsdxhlddnmxuvxjeh.streamlit.app/`
+
+📦 **GitHub Repository:** `https://github.com/Disha-HN/telecom-churn-retention-intelligence`
 
 ---
 
-## 🚀 Overview
+# 🚀 Overview
 
-Customer churn prediction is useful, but a churn probability alone does not answer the most important business questions:
+Traditional churn prediction systems mainly answer:
 
-* **Which customers are most likely to churn?**
-* **What behavioral changes indicate that they are becoming disengaged?**
-* **Which high-risk customers are also valuable to the business?**
-* **Who should the retention team prioritize first?**
-* **What retention action should be considered?**
+> **"Which customers are likely to churn?"**
 
-This project addresses these questions by combining a machine-learning-based churn prediction model with **behavioral intelligence, customer value analysis, retention prioritization, and an AI-powered Retention Agent**.
+However, a telecom retention team also needs to understand:
 
-The system transforms raw telecom customer data into actionable retention intelligence:
+* What is happening to the customer?
+* Is the customer's behavior deteriorating?
+* How valuable is the customer?
+* Which customers should be prioritized?
+* What retention issue should be reviewed?
+
+This project combines a **regularized LightGBM churn model** with behavioral intelligence, customer value analysis, retention prioritization, candidate action routing, and an AI-powered Retention Agent.
 
 ```text
 Customer Data
+      ↓
+Data Understanding
       ↓
 Data Preparation
       ↓
@@ -29,51 +39,57 @@ Feature Engineering
       ↓
 Churn Prediction
       ↓
-Behavior + Value Analysis
+Risk + Behaviour + Value
       ↓
 Retention Priority
       ↓
 Candidate Action + Rationale
       ↓
-Dashboard + AI Retention Agent
+Streamlit Dashboard + AI Agent
+      ↓
+Business Decision Support
 ```
+
+### Core idea
+
+> **Predict the risk. Understand the behaviour. Prioritize the customer. Assist the decision.**
 
 ---
 
 # 🎯 Problem Statement
 
-Traditional churn prediction systems generally focus on estimating:
+A high churn probability alone does not provide enough information for a retention team to decide where to focus its efforts.
 
-> **"Will this customer churn?"**
+For example, two customers may have similar churn risk but very different:
 
-However, a business also needs to understand:
+* behavioral deterioration,
+* customer value,
+* retention priority,
+* and retention-review requirements.
 
-> **"Why is this customer at risk?"**
-> **"Is the customer's behavior deteriorating?"**
-> **"How valuable is this customer?"**
-> **"Which customers should be contacted first?"**
-
-A high churn probability does not necessarily mean that every customer should receive the same retention treatment.
-
-Therefore, this project combines:
+Therefore, the project combines:
 
 ```text
-Churn Risk
-     +
-Customer Behaviour
-     +
-Customer Value
-     ↓
-Retention Intelligence
+                 Churn Risk
+                     +
+                Behaviour
+                     +
+               Customer Value
+                     ↓
+          Retention Intelligence
+                     ↓
+             Retention Priority
+                     ↓
+             Candidate Action
+                     ↓
+             Decision Support
 ```
 
-The goal is to move from **prediction-only** to **decision-oriented customer retention**.
+The goal is to move from **prediction-only** to **decision-oriented customer retention intelligence**.
 
 ---
 
-# 🏗️ System Architecture
-
-The complete system follows a layered pipeline that converts raw telecom data into churn predictions, behavioral insights, customer value analysis, retention priorities, and actionable recommendations.
+# 🏗️ Complete System Architecture
 
 ```text
                          TELECOM CUSTOMER DATA
@@ -84,9 +100,9 @@ The complete system follows a layered pipeline that converts raw telecom data in
                     │                         │
                     │ • Data profiling        │
                     │ • Missingness analysis  │
-                    │ • Churn distribution    │
-                    │ • Temporal analysis     │
-                    │ • Data-quality checks   │
+                    │ • Churn distribution   │
+                    │ • Temporal analysis    │
+                    │ • Data-quality checks  │
                     └────────────┬────────────┘
                                  │
                                  ▼
@@ -114,13 +130,10 @@ The complete system follows a layered pipeline that converts raw telecom data in
                     ┌─────────────────────────┐
                     │    CHURN MODELING       │
                     │                         │
-                    │ RF / XGBoost / LightGBM │
-                    │          │              │
-                    │          ▼              │
-                    │    Model evaluation     │
-                    │          │              │
-                    │          ▼              │
-                    │     Final LightGBM      │
+                    │ • Random Forest         │
+                    │ • XGBoost               │
+                    │ • LightGBM              │
+                    │ • Model evaluation      │
                     └────────────┬────────────┘
                                  │
                                  ▼
@@ -128,8 +141,7 @@ The complete system follows a layered pipeline that converts raw telecom data in
                     │     CHURN RISK SCORE    │
                     │                         │
                     │ predicted_churn_risk   │
-                    │          │              │
-                    │          ▼              │
+                    │                         │
                     │ Low / Moderate / High  │
                     │ Very High               │
                     └────────────┬────────────┘
@@ -142,7 +154,7 @@ The complete system follows a layered pipeline that converts raw telecom data in
  │                         │          │                         │
  │ • Recent deterioration  │          │ • ARPU                  │
  │ • Persistent decline    │          │ • Value tier            │
- │ • Coordinated decline   │          │ • Revenue exposure      │
+ │ • Coordinated decline   │          │ • ARPU exposure         │
  │ • Behavioural state     │          │                         │
  └────────────┬────────────┘          └────────────┬────────────┘
               │                                     │
@@ -154,14 +166,11 @@ The complete system follows a layered pipeline that converts raw telecom data in
                     │                         │
                     │ Risk + Behaviour +      │
                     │ Value                   │
-                    │          │              │
-                    │          ▼              │
+                    │          ↓              │
                     │ Retention Priority      │
-                    │          │              │
-                    │          ▼              │
+                    │          ↓              │
                     │ Candidate Action        │
-                    │          │              │
-                    │          ▼              │
+                    │          ↓              │
                     │ Decision Rationale      │
                     └────────────┬────────────┘
                                  │
@@ -176,8 +185,8 @@ The complete system follows a layered pipeline that converts raw telecom data in
           │ • Customer       │      │ Retention Tools        │
           │ • High Risk      │      │        ↓               │
           │ • Intelligence   │      │ LangChain Agent        │
-          └──────────────────┘      │        ↓               │
-                                    │ Groq LLM               │
+          │ • Operations     │      │        ↓               │
+          └──────────────────┘      │ Groq LLM               │
                                     │        ↓               │
                                     │ Natural Language       │
                                     │ Retention Insights     │
@@ -192,29 +201,45 @@ The complete system follows a layered pipeline that converts raw telecom data in
 
 The system uses machine learning to estimate the probability that a customer will churn.
 
-Multiple models were evaluated:
+Three models were evaluated:
 
 * Random Forest
 * XGBoost
 * LightGBM
 
-The final system uses **LightGBM** for churn prediction.
+The final system uses a **regularized LightGBM classifier**.
+
+```text
+Customer
+    ↓
+189 Predictive Features
+    ↓
+LightGBM
+    ↓
+Predicted Churn Risk
+```
+
+The model-generated probability is represented by:
+
+```text
+predicted_churn_risk
+```
 
 ---
 
 ## 📊 Behavioral Intelligence
 
-The system does not rely only on the churn score.
+The system analyzes customer behavior across multiple observed months instead of relying only on a single churn score.
 
-It analyzes customer behavior across multiple months to identify:
+Behavioral signals include:
 
 * Recent deterioration
 * Persistent decline
-* Coordinated decline
-* Changes in ARPU
-* Changes in recharge behavior
-* Changes in outgoing usage
-* Changes in incoming usage
+* Coordinated deterioration
+* ARPU changes
+* Recharge behavior changes
+* Outgoing usage changes
+* Incoming usage changes
 * Overall behavioral state
 * Evidence supporting the behavioral assessment
 
@@ -222,19 +247,15 @@ This helps answer:
 
 > **"What is happening to the customer?"**
 
-rather than only:
-
-> **"Will the customer churn?"**
-
 ---
 
 ## 💰 Customer Value Analysis
 
-Customer value is incorporated into the retention decision using indicators such as:
+Customer value is represented using observable indicators such as:
 
 * ARPU
 * Value tier
-* Revenue exposure
+* ARPU exposure
 
 This allows the system to distinguish between different types of high-risk customers.
 
@@ -242,35 +263,15 @@ For example:
 
 ```text
 High Churn Risk
-      +
-High Customer Value
-      +
-Behavioral Decline
-      ↓
-High Retention Priority
+       +
+Higher Customer Value
+       +
+Behavioural Deterioration
+       ↓
+Higher Retention Priority
 ```
 
----
-
-## 🎯 Retention Prioritization
-
-The system combines:
-
-```text
-Churn Risk
-     +
-Behaviour
-     +
-Customer Value
-     ↓
-Retention Priority
-     ↓
-Candidate Action
-     ↓
-Decision Rationale
-```
-
-This converts a raw ML prediction into a more actionable business recommendation.
+> **Note:** ARPU is used as a value indicator. The system does not claim ARPU to be Customer Lifetime Value, profit, or margin.
 
 ---
 
@@ -278,7 +279,7 @@ This converts a raw ML prediction into a more actionable business recommendation
 
 ## Feature Engineering
 
-The final model uses **189 engineered features** derived from telecom customer behavior.
+The final model uses **189 predictive features** after excluding the customer identifier.
 
 Feature groups include:
 
@@ -294,27 +295,34 @@ Feature groups include:
 * Coordinated deterioration indicators
 * Activity indicators
 
-### Temporal Analysis
+---
 
-Customer behavior is compared across multiple months:
+## 📅 Temporal Behaviour
+
+Customer behavior is analyzed across observed monthly periods:
 
 ```text
 June → July → August
 ```
 
-The system calculates:
+The system calculates temporal changes such as:
 
 ```text
-June → July change
-July → August change
-June → August change
+June → July
+July → August
+June → August
 ```
 
-This allows the model and intelligence layer to identify both short-term and sustained behavioral changes.
+This allows the system to represent:
+
+* Short-term behavioral changes
+* Overall deterioration
+* Persistent decline
+* Coordinated deterioration
 
 ---
 
-## 🤖 Models Evaluated
+# 🤖 Model Comparison
 
 | Model         |    ROC-AUC |     PR-AUC |
 | ------------- | ---------: | ---------: |
@@ -322,79 +330,98 @@ This allows the model and intelligence layer to identify both short-term and sus
 | XGBoost       |     0.9406 |     0.7388 |
 | **LightGBM**  | **0.9426** | **0.7453** |
 
-### Final LightGBM
+LightGBM achieved the strongest validation performance among the evaluated models.
 
-The final LightGBM model achieved:
+---
 
-| Metric    |      Score |
-| --------- | ---------: |
-| ROC-AUC   | **0.9426** |
-| PR-AUC    | **0.7453** |
-| Precision | **0.7504** |
-| Recall    | **0.6157** |
-| F1 Score  | **0.6764** |
+# 🌿 Final LightGBM Model
 
-The final trained model is stored as:
+The final model uses regularization and constrained tree complexity to reduce overfitting.
+
+Key configuration:
+
+```text
+n_estimators       = 500
+learning_rate      = 0.05
+max_depth          = 4
+num_leaves         = 15
+min_child_samples  = 60
+subsample           = 0.8
+colsample_bytree    = 0.8
+reg_lambda          = 1
+```
+
+### Validation Performance
+
+```text
+ROC-AUC : 0.9426
+PR-AUC  : 0.7453
+```
+
+The trained model is stored at:
 
 ```text
 model/final_lightgbm_churn_model.joblib
 ```
 
+> **Evaluation note:** These metrics are validation-set results from the model-development stage. The same validation population was used during model and threshold exploration, so they should not be interpreted as an unbiased production performance estimate.
+
 ---
 
 # 📈 Churn Risk Segmentation
 
-The predicted churn probabilities are used to divide customers into four risk tiers:
+Predicted churn probabilities are converted into four relative risk tiers:
 
 ```text
-┌──────────────┐
-│     Low      │
-└──────────────┘
-
-┌──────────────┐
-│   Moderate   │
-└──────────────┘
-
-┌──────────────┐
-│     High     │
-└──────────────┘
-
-┌──────────────┐
-│   Very High  │
-└──────────────┘
+Low
+Moderate
+High
+Very High
 ```
 
-This allows the business team to quickly identify customers requiring greater attention.
+The tiers are based on **relative quartiles of the scored population**.
+
+Therefore:
+
+> **Very High means the customer belongs to the highest relative risk segment. It does not necessarily mean the customer's absolute churn probability is greater than 50%.**
 
 ---
 
 # 🔎 Behavioral Intelligence
 
-Behavioral intelligence is generated from customer-level temporal patterns.
-
-### Recent Deterioration
+## Recent Deterioration
 
 Identifies whether important customer activity has declined recently.
 
 Examples:
 
 ```text
-ARPU ↓
-Recharge Amount ↓
-Recharge Count ↓
-Outgoing Usage ↓
-Incoming Usage ↓
+ARPU              ↓
+Recharge Amount   ↓
+Recharge Count    ↓
+Outgoing Usage    ↓
+Incoming Usage    ↓
 ```
 
-### Persistent Decline
+---
 
-Identifies behavioral signals that show decline across multiple periods rather than only one recent change.
+## Persistent Decline
 
-### Coordinated Decline
+Identifies behavioral signals that show decline across multiple observed periods.
 
-Measures how many important behavioral metrics are declining together.
+```text
+June → July → August
+       ↓       ↓
+   Sustained decline
+```
 
-For example:
+Persistent deterioration provides stronger evidence of sustained decline than a single month-to-month change.
+
+---
+
+## Coordinated Decline
+
+Measures how many important behavioral dimensions are declining together.
 
 ```text
 ARPU              ↓
@@ -405,196 +432,265 @@ Incoming Usage    ↓
       Coordinated Deterioration
 ```
 
-This provides stronger behavioral evidence than looking at a single metric.
+---
+
+## Behavioral States
+
+The system converts deterioration signals into interpretable descriptive states:
+
+```text
+Stable / Limited Deterioration
+Recent Deterioration
+Recent Broad Deterioration
+Persistent Deterioration
+Severe Persistent Deterioration
+```
+
+These are analytical categories describing observed data patterns. They are not psychological states or causal explanations.
 
 ---
 
 # 🎯 Retention Intelligence
 
-The retention intelligence layer combines three major dimensions:
+The retention layer combines:
 
 ```text
-        ┌───────────────┐
-        │   Churn Risk  │
-        └───────┬───────┘
-                │
-        ┌───────▼───────┐
-        │   Behaviour   │
-        └───────┬───────┘
-                │
-        ┌───────▼───────┐
-        │ Customer Value│
-        └───────┬───────┘
-                │
-                ▼
-      ┌───────────────────┐
-      │ Retention Priority│
-      └─────────┬─────────┘
-                │
-                ▼
-       Candidate Action
-                │
-                ▼
-       Decision Rationale
+        Churn Risk
+             +
+         Behaviour
+             +
+       Customer Value
+             ↓
+    Retention Priority
+             ↓
+      Candidate Action
+             ↓
+     Decision Rationale
 ```
 
-The resulting retention intelligence contains information such as:
+Customer-level retention intelligence contains:
 
+* Predicted churn risk
 * Risk tier
 * Behavioral state
 * Behavioral evidence
+* Recent deterioration count
+* Persistent deterioration count
+* Coordinated deterioration count
 * Value tier
+* ARPU
+* Retention priority
+* Candidate action
+* Decision rationale
+
+The processed dataset is stored at:
+
+```text
+data/processed/telecom_retention_intelligence.csv
+```
+
+---
+
+# 🧭 Candidate Retention Actions
+
+Customers are routed to candidate retention-review categories based on observable behavioral patterns.
+
+Examples include:
+
+```text
+Persistent Deterioration Review
+Broad Recent Deterioration Review
+Recharge / Affordability Review
+Usage / Engagement Review
+General Retention Review
+```
+
+These are **candidate review categories**, not guaranteed treatments.
+
+The system does not claim that a particular action will causally prevent churn.
+
+---
+
+# 🤖 AI Retention Agent
+
+The AI Retention Agent provides a natural-language interface over the retention-intelligence layer.
+
+### Architecture
+
+```text
+User Question
+      ↓
+Customer / Business Context
+      ↓
+Retention Intelligence Tools
+      ↓
+LangChain Agent
+      ↓
+Groq LLM
+      ↓
+Natural Language Retention Insight
+```
+
+The agent does not independently calculate or modify the ML churn probability.
+
+Instead:
+
+```text
+ML Model
+   ↓
+Predicted Churn Risk
+   ↓
+Retention Intelligence Dataset
+   ↓
+Agent Tools
+   ↓
+LLM Reasoning
+   ↓
+Business Explanation
+```
+
+---
+
+# 🛠️ Agent Tools
+
+The AI agent can access:
+
+* Customer profiles
+* Highest churn-risk customers
+* Priority customers
+* Customer behavioral analysis
+* Retention summaries
+
+---
+
+# ⚡ Intelligent Query Routing
+
+Simple and predictable queries can be handled directly through deterministic tools without requiring a full LLM reasoning cycle.
+
+```text
+                    User Question
+                         ↓
+                    Query Router
+                    /          \
+                   /            \
+          Simple Query       Complex Query
+               ↓                   ↓
+        Deterministic Tool    LangChain Agent
+                                   ↓
+                                Groq LLM
+```
+
+This design provides:
+
+* Faster responses for simple queries
+* Lower unnecessary LLM usage
+* Deterministic answers for known operations
+* LLM reasoning for complex natural-language questions
+
+---
+
+# 💬 Example AI Agent Queries
+
+```text
+Which customers have the highest predicted churn risk?
+```
+
+```text
+Which customers should we prioritize for retention?
+```
+
+```text
+What is the retention summary?
+```
+
+```text
+Analyze customer 2.
+```
+
+```text
+Why is this customer Priority 2?
+```
+
+```text
+What behavioural signals indicate customer deterioration?
+```
+
+The system maintains separation between:
+
+```text
+Observed Evidence
+        ≠
+ML Prediction
+        ≠
+Business Priority
+        ≠
+Agent Explanation
+        ≠
+Causal Treatment Effect
+```
+
+---
+
+# 🖥️ Streamlit Application
+
+The project provides an interactive Streamlit dashboard with six major views.
+
+## 📊 Executive Dashboard
+
+Provides an overall view of the customer portfolio:
+
+* Customer population
+* Churn distribution
+* Risk distribution
+* Retention priorities
+* Business-level indicators
+
+---
+
+## 👤 Customer Analysis
+
+Provides detailed analysis for an individual customer:
+
+* Customer profile
+* Predicted churn risk
+* Risk tier
+* Behavioral state
+* Behavioral evidence
+* Deterioration indicators
+* Customer value
 * Retention priority
 * Candidate action
 * Decision rationale
 
 ---
 
-# 🤖 AI Retention Agent
-
-The AI Retention Agent provides a natural-language interface to the retention intelligence layer.
-
-### Architecture
-
-```text
-User Question
-      │
-      ▼
-Customer / Business Context
-      │
-      ▼
-Retention Intelligence Tools
-      │
-      ▼
-LangChain Agent
-      │
-      ▼
-Groq LLM
-      │
-      ▼
-Natural Language Response
-```
-
-The agent uses controlled tools to retrieve information from the processed retention-intelligence dataset.
-
-### Available Intelligence Tools
-
-The agent can access:
-
-* Customer profiles
-* High-risk customers
-* Priority customers
-* Customer behavioral analysis
-* Retention summaries
-
-### Example Questions
-
-```text
-Which customers are at very high churn risk?
-```
-
-```text
-Show me the highest-priority customers.
-```
-
-```text
-What is the retention status of customer 10001?
-```
-
-```text
-Why is this customer considered high risk?
-```
-
-```text
-What are the major behavioral patterns?
-```
-
-The agent is designed to ground responses in the available customer intelligence rather than inventing customer-level information.
-
----
-
-# ⚡ Intelligent Query Routing
-
-Simple questions do not always require a full LLM reasoning cycle.
-
-The system therefore uses deterministic routing for straightforward queries such as:
-
-```text
-Which customers are at very high churn risk?
-```
-
-These requests can directly retrieve the required information from the local intelligence tools.
-
-More complex questions can be passed to the:
-
-```text
-LangChain → Groq LLM
-```
-
-pipeline.
-
-This improves responsiveness while keeping the AI layer useful for natural-language analysis.
-
----
-
-# 🖥️ Streamlit Application
-
-The project provides an interactive Streamlit dashboard with multiple views.
-
-## 📊 Executive Dashboard
-
-Provides an overall view of the customer base, including:
-
-* Customer population
-* Churn risk distribution
-* Risk tiers
-* Retention priorities
-* Business-level trends
-
----
-
-## 👤 Customer Analysis
-
-Provides detailed analysis for an individual customer.
-
-The view includes:
-
-* Customer profile
-* Churn risk
-* Risk tier
-* Behavioral state
-* Behavioral evidence
-* Deterioration indicators
-* Customer value
-* Retention decision
-
----
-
 ## 🚨 High-Risk Customers
 
-Provides a focused view of customers belonging to the highest risk groups.
+Provides a focused view of customers with high predicted churn risk.
 
-Users can identify:
+Users can examine:
 
-* High-risk customers
-* Very-high-risk customers
-* Predicted churn risk
+* Predicted churn probability
+* Risk tier
 * Customer value
-* Retention-related information
+* Retention priority
+* Behavioral information
 
-The table can also be downloaded for further analysis.
+The results can also be downloaded for further analysis.
+
+> **Important:** High churn risk and retention priority are different concepts.
 
 ---
 
-## 🎯 Retention Intelligence
+## 🧠 Retention Intelligence
 
-Provides a business-oriented view of customer retention signals.
+Provides a business-oriented view of:
 
-It includes:
-
+* Risk segmentation
 * Behavioral state distribution
 * Deterioration patterns
 * Retention priorities
+* Risk × value analysis
 * Candidate actions
 * Decision rationale
 
@@ -602,163 +698,49 @@ It includes:
 
 ## 🤖 AI Retention Agent
 
-Provides a conversational interface for asking questions about the customer base.
+Provides a conversational interface for asking questions about:
 
-Users can interact with the system without manually navigating through multiple tables.
-
----
-
-# 🛠️ Technology Stack
-
-| Category               | Technology                 |
-| ---------------------- | -------------------------- |
-| Programming Language   | Python                     |
-| Machine Learning       | LightGBM                   |
-| Model Comparison       | Random Forest, XGBoost     |
-| Data Processing        | Pandas, NumPy              |
-| Visualization          | Plotly                     |
-| Web Framework          | Streamlit                  |
-| AI Agent Framework     | LangChain                  |
-| Large Language Model   | Groq                       |
-| Model Serialization    | Joblib                     |
-| Environment Management | Python Virtual Environment |
-| Version Control        | Git                        |
-| Repository             | GitHub                     |
+* Customers
+* Churn risk
+* Behavioral deterioration
+* Retention priorities
+* Retention summaries
 
 ---
 
-# 📁 Project Structure
+## 📈 Retention Operations
+
+Converts retention intelligence into an operational customer-review queue.
+
+The view provides:
+
+* Priority 1 customers
+* Priority 2 customers
+* Retention action queue
+* Candidate action workload
+* ARPU exposure
+* Operational playbook
+* Retention-review workflow
 
 ```text
-telecom-churn-retention-intelligence/
-│
-├── app/
-│   └── app.py
-│
-├── agent/
-│   ├── __init__.py
-│   ├── agent.py
-│   ├── config.py
-│   ├── prompts.py
-│   └── tool.py
-│
-├── data/
-│   └── processed/
-│       └── telecom_retention_intelligence.csv
-│
-├── model/
-│   └── final_lightgbm_churn_model.joblib
-│
-├── notebook/
-│   └── ...
-│
-├── reports/
-│   └── ...
-│
-├── package.json
-├── package-lock.json
-└── README.md
+Predicted Risk
+      ↓
+Retention Priority
+      ↓
+Behavioural Context
+      ↓
+Candidate Action
+      ↓
+Human Review
+      ↓
+Retention Decision
 ```
+
+The current prototype is **batch-based decision support** using prepared historical customer data. It is not a real-time production scoring system.
 
 ---
 
-# ⚙️ Installation
-
-## 1. Clone the Repository
-
-```bash
-git clone https://github.com/Disha-HN/telecom-churn-retention-intelligence.git
-```
-
-Move into the project directory:
-
-```bash
-cd telecom-churn-retention-intelligence
-```
-
----
-
-## 2. Create a Virtual Environment
-
-### Windows
-
-```bash
-python -m venv .venv
-```
-
-Activate it:
-
-```bash
-.venv\Scripts\activate
-```
-
-### Linux / macOS
-
-```bash
-python3 -m venv .venv
-source .venv/bin/activate
-```
-
----
-
-## 3. Install Dependencies
-
-If a `requirements.txt` file is included:
-
-```bash
-pip install -r requirements.txt
-```
-
-Otherwise, install the required packages:
-
-```bash
-pip install streamlit pandas numpy scikit-learn lightgbm xgboost plotly joblib python-dotenv langchain langchain-groq
-```
-
----
-
-# 🔐 Environment Variables
-
-The AI Retention Agent requires a Groq API key.
-
-Create a `.env` file in the project environment used by the application and add:
-
-```env
-GROQ_API_KEY=your_groq_api_key
-```
-
-The application reads the key through environment variables.
-
-### Security
-
-Never commit API keys to GitHub.
-
-Your `.gitignore` should include:
-
-```gitignore
-.env
-__pycache__/
-*.pyc
-node_modules/
-```
-
----
-
-# ▶️ Running the Application
-
-From the project root:
-
-```bash
-streamlit run app/app.py
-```
-
-The Streamlit interface will then be available through the local URL displayed by Streamlit.
-
----
-
-# 📊 Data Flow
-
-The complete data flow can be summarized as:
+# 🔄 End-to-End Data Flow
 
 ```text
 Raw Telecom Dataset
@@ -778,29 +760,34 @@ ML Model
         ▼
 Predicted Churn Risk
         │
-        ├───────────────┐
-        │               │
-        ▼               ▼
-Behaviour Analysis   Customer Value
-        │               │
-        └───────┬───────┘
-                ▼
-      Retention Intelligence
-                │
-        ┌───────┴────────┐
+        ├────────────────┐
+        │                │
         ▼                ▼
-   Streamlit         AI Agent
-   Dashboard        LangChain
-                       │
-                       ▼
-                    Groq LLM
+Behaviour Analysis   Customer Value
+        │                │
+        └────────┬───────┘
+                 │
+                 ▼
+       Retention Intelligence
+                 │
+          ┌──────┴──────┐
+          │             │
+          ▼             ▼
+     Streamlit       AI Agent
+     Dashboard       Tools
+                         │
+                         ▼
+                    LangChain
+                         │
+                         ▼
+                      Groq LLM
 ```
 
 ---
 
 # 📌 Source-of-Truth Design
 
-The system separates machine-learning predictions from business intelligence.
+The system deliberately separates ML predictions from business intelligence.
 
 ### ML Model
 
@@ -810,9 +797,11 @@ The ML model is the source of truth for:
 predicted_churn_risk
 ```
 
+This represents the model-generated churn probability.
+
 ### Retention Intelligence Dataset
 
-The processed retention-intelligence dataset is the source of truth for:
+The processed dataset is the source of truth for:
 
 ```text
 risk_tier
@@ -824,23 +813,248 @@ candidate_action
 decision_rationale
 ```
 
-This separation helps prevent the AI agent from confusing raw churn labels with predicted churn probability.
+This prevents the AI agent from confusing:
+
+```text
+Observed Churn Label
+        ≠
+Predicted Churn Probability
+        ≠
+Business Priority
+```
 
 ---
 
-# 📈 Key Results
+# 🔄 CI/CD & Deployment
 
-The final LightGBM model achieved:
+The project uses **GitHub Actions** for continuous integration and **Streamlit Community Cloud** for deployment.
+
+## Continuous Integration
+
+Every push to the `master` branch and pull request targeting `master` can trigger the CI workflow.
+
+The workflow performs:
+
+* Python environment setup
+* Dependency installation
+* Python syntax validation
+* Core dependency validation
+* Project import validation
 
 ```text
-ROC-AUC   : 0.9426
-PR-AUC    : 0.7453
-Precision : 0.7504
-Recall    : 0.6157
-F1 Score  : 0.6764
+Developer Push
+      ↓
+GitHub Repository
+      ↓
+GitHub Actions
+      ↓
+Install Dependencies
+      ↓
+Validate Python Files
+      ↓
+Validate Project Imports
+      ↓
+🟢 CI Pass
 ```
 
-The system then extends the prediction layer with:
+Workflow:
+
+```text
+.github/workflows/ci.yml
+```
+
+---
+
+# 🌐 Deployment
+
+The Streamlit application is designed for deployment through **Streamlit Community Cloud**.
+
+```text
+GitHub Repository
+       ↓
+Streamlit Community Cloud
+       ↓
+app/app.py
+       ↓
+Live Streamlit Application
+       ↓
+Groq AI Retention Agent
+```
+
+### Streamlit Configuration
+
+```text
+Repository:
+Disha-HN/telecom-churn-retention-intelligence
+
+Branch:
+master
+
+Main file:
+app/app.py
+```
+
+---
+
+# 🔐 Secret Management
+
+The Groq API key should never be committed to GitHub.
+
+### Local Development
+
+Create a local `.env` file:
+
+```text
+GROQ_API_KEY=your_groq_api_key
+```
+
+### Streamlit Cloud
+
+Configure the key through Streamlit Secrets:
+
+```toml
+GROQ_API_KEY = "your_groq_api_key"
+```
+
+The application reads the key through environment configuration.
+
+> **Never upload `.env` or expose API keys in source code.**
+
+---
+
+# 🛠️ Technology Stack
+
+| Category               | Technology                 |
+| ---------------------- | -------------------------- |
+| Programming Language   | Python                     |
+| Machine Learning       | LightGBM                   |
+| Model Comparison       | Random Forest, XGBoost     |
+| Data Processing        | Pandas, NumPy              |
+| Visualization          | Plotly                     |
+| Web Framework          | Streamlit                  |
+| AI Agent Framework     | LangChain                  |
+| Large Language Model   | Groq                       |
+| Model Serialization    | Joblib                     |
+| Environment Management | Python Virtual Environment |
+| Version Control        | Git                        |
+| Continuous Integration | GitHub Actions             |
+| Deployment             | Streamlit Community Cloud  |
+
+---
+
+# 📁 Project Structure
+
+```text
+telecom-churn-retention-intelligence/
+│
+├── .github/
+│   └── workflows/
+│       └── ci.yml
+│
+├── app/
+│   └── app.py
+│
+├── agent/
+│   ├── __init__.py
+│   ├── agent.py
+│   ├── config.py
+│   ├── prompts.py
+│   └── tool.py
+│
+├── data/
+│   └── processed/
+│       └── telecom_retention_intelligence.csv
+│
+├── model/
+│   └── final_lightgbm_churn_model.joblib
+│
+├── notebook/
+│   ├── 01Data_understanding.ipynb
+│   ├── 02Data_preparation.ipynb
+│   ├── 03Model_development.ipynb
+│   └── 04Retention_intelligence.ipynb
+│
+├── requirements.txt
+├── README.md
+├── package.json
+└── package-lock.json
+```
+
+---
+
+# ⚙️ Installation
+
+## 1. Clone the Repository
+
+```bash
+git clone https://github.com/Disha-HN/telecom-churn-retention-intelligence.git
+cd telecom-churn-retention-intelligence
+```
+
+## 2. Create a Virtual Environment
+
+### Windows
+
+```bash
+python -m venv .venv
+.venv\Scripts\activate
+```
+
+### Linux / macOS
+
+```bash
+python3 -m venv .venv
+source .venv/bin/activate
+```
+
+## 3. Install Dependencies
+
+```bash
+pip install -r requirements.txt
+```
+
+---
+
+# ▶️ Run Locally
+
+From the project root:
+
+```bash
+streamlit run app/app.py
+```
+
+The local Streamlit URL will be displayed in the terminal.
+
+---
+
+# 📊 Key Results
+
+### Model Comparison
+
+```text
+Random Forest
+ROC-AUC : 0.9349
+PR-AUC  : 0.7272
+
+XGBoost
+ROC-AUC : 0.9406
+PR-AUC  : 0.7388
+
+LightGBM
+ROC-AUC : 0.9426
+PR-AUC  : 0.7453
+```
+
+### Final Model
+
+```text
+Model    : LightGBM
+Features : 189
+ROC-AUC  : 0.9426
+PR-AUC   : 0.7453
+```
+
+The project then extends the predictive layer with:
 
 ```text
 Churn Risk
@@ -852,9 +1066,9 @@ Customer Value
 Retention Priority
     +
 Candidate Action
+    +
+Decision Rationale
 ```
-
-This provides a more complete view of customer retention than a standalone churn classifier.
 
 ---
 
@@ -862,9 +1076,36 @@ This provides a more complete view of customer retention than a standalone churn
 
 The predictions generated by this project should be treated as **decision-support signals**, not guaranteed predictions of future customer behavior.
 
-Retention decisions should consider additional business context and appropriate human review.
+The system does not claim:
 
-The AI agent is also constrained to the available customer intelligence and should not be treated as an independent source of customer facts.
+* Causal treatment effectiveness
+* Guaranteed churn prevention
+* Customer Lifetime Value
+* Profit or margin impact
+* Guaranteed ROI from retention actions
+
+Behavioral intelligence describes observed patterns in the available data.
+
+Candidate actions represent **retention-review categories**, not proven interventions.
+
+The AI agent is grounded in the available customer intelligence and should not be treated as an independent source of customer facts.
+
+Human review remains important when making actual retention decisions.
+
+---
+
+# ⚠️ Current Limitations
+
+The current prototype has several limitations:
+
+* Uses prepared historical telecom data
+* Does not perform real-time customer scoring
+* Does not directly integrate with a telecom CRM
+* Candidate actions are not causal treatment recommendations
+* ARPU is used as a value indicator rather than true CLV
+* Validation metrics are not a production performance guarantee
+* New-customer prediction requires the complete original preprocessing pipeline
+* Production monitoring and model-drift detection are not yet implemented
 
 ---
 
@@ -875,14 +1116,66 @@ Potential future improvements include:
 * Real-time telecom data integration
 * Automated CRM integration
 * Explainable AI using SHAP
-* Automated retention campaign execution
 * Customer Lifetime Value modeling
 * Cost-aware retention optimization
+* Automated retention campaign execution
 * Real-time churn monitoring
-* Cloud deployment
 * Scalable model serving
 * Automated model retraining
-* Genuine ML prediction for newly entered customers using the complete training preprocessing pipeline
+* Genuine ML prediction for newly entered customers using the complete preprocessing pipeline
+* Production-grade monitoring
+* Model drift detection
+* Automated model performance monitoring
+
+---
+
+# ⭐ Project Impact
+
+The project demonstrates how a traditional churn prediction system can be extended into a broader **retention intelligence platform**.
+
+Instead of stopping at:
+
+```text
+"Who might churn?"
+```
+
+the system moves toward:
+
+```text
+"Who might churn?"
+        ↓
+"Why does the data indicate risk?"
+        ↓
+"What behavioural changes are visible?"
+        ↓
+"How valuable is the customer?"
+        ↓
+"Who should receive greater retention attention?"
+        ↓
+"What retention issue should be reviewed?"
+```
+
+---
+
+# 🚀 Engineering Workflow
+
+```text
+             GitHub
+                ↓
+       GitHub Actions CI
+                ↓
+      Automated Validation
+                ↓
+   Streamlit Community Cloud
+                ↓
+       Live Application
+                ↓
+       AI Retention Agent
+```
+
+The project demonstrates an end-to-end workflow covering:
+
+**Data Preparation → Feature Engineering → Machine Learning → Behavioral Intelligence → Retention Prioritization → AI-Assisted Reasoning → Streamlit Dashboard → CI/CD → Cloud Deployment**
 
 ---
 
@@ -890,23 +1183,17 @@ Potential future improvements include:
 
 ## Telecom Churn Retention Intelligence
 
-A machine-learning and generative-AI-based decision-support system designed to help telecom businesses move from:
+A machine-learning and generative-AI-assisted decision-support system designed to help telecom businesses move from:
 
-```text
-"Who might churn?"
-```
+> **Prediction-only churn analysis**
 
 to:
 
-```text
-"Who should we retain first,
-why are they at risk,
-and what action should be considered?"
-```
+> **Risk-aware, behavior-aware, value-aware retention decision support.**
 
 ---
 
-## ⭐ Core Idea
+# 💡 Core Idea
 
 ```text
               PREDICT
@@ -925,7 +1212,7 @@ and what action should be considered?"
                  ↓
        RETENTION INTELLIGENCE
                  ↓
-             RECOMMEND
+              ROUTE
                  ↓
           CANDIDATE ACTION
                  ↓
@@ -936,6 +1223,10 @@ and what action should be considered?"
              INTERACT
                  ↓
           AI RETENTION AGENT
+                 ↓
+        BUSINESS DECISION SUPPORT
 ```
 
-**Built with Python, LightGBM, Streamlit, LangChain, and Groq.**
+---
+
+**Built with Python, LightGBM, Pandas, NumPy, Plotly, Streamlit, LangChain, Groq, GitHub Actions, and Streamlit Community Cloud.**
