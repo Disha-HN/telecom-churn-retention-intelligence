@@ -80,108 +80,108 @@ The complete system follows a layered pipeline that converts raw telecom data in
                                   │
                                   ▼
                     ┌─────────────────────────┐
-                    │   DATA UNDERSTANDING           │
-                    │                                │
-                    │ • Data profiling               │
-                    │ • Missingness analysis         │
-                    │ • Churn distribution           │
-                    │ • Temporal analysis            │
-                    │ • Data-quality checks          │
+                    │   DATA UNDERSTANDING    │
+                    │                         │
+                    │ • Data profiling        │
+                    │ • Missingness analysis  │
+                    │ • Churn distribution    │
+                    │ • Temporal analysis     │
+                    │ • Data-quality checks   │
                     └────────────┬────────────┘
                                  │
                                  ▼
                     ┌─────────────────────────┐
-                    │   DATA PREPARATION             │
-                    │                                │
-                    │ • Metadata handling            │
-                    │ • Missing-value logic          │
-                    │ • Activity indicators          │
-                    │ • Validation                   │
+                    │   DATA PREPARATION      │
+                    │                         │
+                    │ • Metadata handling     │
+                    │ • Missing-value logic   │
+                    │ • Activity indicators  │
+                    │ • Validation            │
                     └────────────┬────────────┘
                                  │
                                  ▼
                     ┌─────────────────────────┐
-                    │  FEATURE ENGINEERING           │
-                    │                                │
-                    │ • Monthly behaviour            │
-                    │ • Temporal changes             │
-                    │ • Persistent decline           │
-                    │ • Recent deterioration         │
-                    │ • Coordinated decline          │
+                    │  FEATURE ENGINEERING    │
+                    │                         │
+                    │ • Monthly behaviour     │
+                    │ • Temporal changes      │
+                    │ • Persistent decline    │
+                    │ • Recent deterioration  │
+                    │ • Coordinated decline   │
                     └────────────┬────────────┘
                                  │
                                  ▼
                     ┌─────────────────────────┐
-                    │    CHURN MODELING              │
-                    │                                │
-                    │ RF / XGBoost / LightGBM        │
-                    │          │                     │
-                    │          ▼                     │
-                    │    Model evaluation            │
-                    │          │                     │
-                    │          ▼                     │
-                    │     Final LightGBM             │
+                    │    CHURN MODELING       │
+                    │                         │
+                    │ RF / XGBoost / LightGBM │
+                    │          │              │
+                    │          ▼              │
+                    │    Model evaluation     │
+                    │          │              │
+                    │          ▼              │
+                    │     Final LightGBM      │
                     └────────────┬────────────┘
                                  │
                                  ▼
                     ┌─────────────────────────┐
-                    │     CHURN RISK SCORE           │
-                    │                                │
-                    │ predicted_churn_risk           │
-                    │          │                     │
-                    │          ▼                     │
-                    │ Low / Moderate / High          │
-                    │ Very High                      │
+                    │     CHURN RISK SCORE    │
+                    │                         │
+                    │ predicted_churn_risk   │
+                    │          │              │
+                    │          ▼              │
+                    │ Low / Moderate / High  │
+                    │ Very High               │
                     └────────────┬────────────┘
                                  │
               ┌──────────────────┴──────────────────┐
               │                                     │
               ▼                                     ▼
- ┌─────────────────────────┐          ┌──────────────────────┐
- │ BEHAVIOURAL INTELLIGENC        │          │   CUSTOMER VALUE        │
- │                                │          │                         │
- │ • Recent deterioration         │          │ • ARPU                  │
- │ • Persistent decline           │          │ • Value tier            │
- │ • Coordinated decline          │          │ • Revenue exposure      │
- │ • Behavioural state            │          │                         │
- └────────────┬────────────┘          └────────────┬─────────┘
+ ┌─────────────────────────┐          ┌─────────────────────────┐
+ │ BEHAVIOURAL INTELLIGENCE│          │   CUSTOMER VALUE        │
+ │                         │          │                         │
+ │ • Recent deterioration  │          │ • ARPU                  │
+ │ • Persistent decline    │          │ • Value tier            │
+ │ • Coordinated decline   │          │ • Revenue exposure      │
+ │ • Behavioural state     │          │                         │
+ └────────────┬────────────┘          └────────────┬────────────┘
               │                                     │
               └──────────────────┬──────────────────┘
                                  │
                                  ▼
                     ┌─────────────────────────┐
-                    │ RETENTION INTELLIGENCE         │
-                    │                                │
-                    │ Risk + Behaviour +             │
-                    │ Value                          │
-                    │          │                     │
-                    │          ▼                     │
-                    │ Retention Priority             │
-                    │          │                     │
-                    │          ▼                     │
-                    │ Candidate Action               │
-                    │          │                     │
-                    │          ▼                     │
-                    │ Decision Rationale              │
+                    │ RETENTION INTELLIGENCE  │
+                    │                         │
+                    │ Risk + Behaviour +      │
+                    │ Value                   │
+                    │          │              │
+                    │          ▼              │
+                    │ Retention Priority      │
+                    │          │              │
+                    │          ▼              │
+                    │ Candidate Action        │
+                    │          │              │
+                    │          ▼              │
+                    │ Decision Rationale      │
                     └────────────┬────────────┘
                                  │
                     ┌────────────┴────────────┐
                     │                         │
                     ▼                         ▼
-          ┌──────────────────┐      ┌────────────────────┐
-          │ STREAMLIT             │      │ AI RETENTION AGENT     │
-          │ DASHBOARD             │      │                        │
-          │                       │      │ Customer Context       │
-          │ • Executive           │      │        ↓               │
-          │ • Customer            │      │ Retention Tools        │
-          │ • High Risk           │      │        ↓               │
-          │ • Intelligence        │      │ LangChain Agent        │
+          ┌──────────────────┐      ┌────────────────────────┐
+          │ STREAMLIT        │      │ AI RETENTION AGENT     │
+          │ DASHBOARD        │      │                        │
+          │                  │      │ Customer Context       │
+          │ • Executive      │      │        ↓               │
+          │ • Customer       │      │ Retention Tools        │
+          │ • High Risk      │      │        ↓               │
+          │ • Intelligence   │      │ LangChain Agent        │
           └──────────────────┘      │        ↓               │
-                                          │ Groq LLM               │
-                                          │        ↓               │
-                                          │ Natural Language       │
-                                          │ Retention Insights     │
-                                         └──────────────────────┘
+                                    │ Groq LLM               │
+                                    │        ↓               │
+                                    │ Natural Language       │
+                                    │ Retention Insights     │
+                                    └────────────────────────┘
 ```
 
 ---
@@ -348,19 +348,19 @@ The predicted churn probabilities are used to divide customers into four risk ti
 
 ```text
 ┌──────────────┐
-│     Low          │
+│     Low      │
 └──────────────┘
 
 ┌──────────────┐
-│   Moderate       │
+│   Moderate   │
 └──────────────┘
 
 ┌──────────────┐
-│     High         │
+│     High     │
 └──────────────┘
 
 ┌──────────────┐
-│   Very High      │
+│   Very High  │
 └──────────────┘
 ```
 
@@ -415,20 +415,20 @@ The retention intelligence layer combines three major dimensions:
 
 ```text
         ┌───────────────┐
-        │   Churn Risk      │
+        │   Churn Risk  │
         └───────┬───────┘
                 │
         ┌───────▼───────┐
-        │   Behaviour       │
+        │   Behaviour   │
         └───────┬───────┘
                 │
         ┌───────▼───────┐
-        │ Customer Value     │
+        │ Customer Value│
         └───────┬───────┘
                 │
                 ▼
       ┌───────────────────┐
-      │ Retention Priority      │
+      │ Retention Priority│
       └─────────┬─────────┘
                 │
                 ▼
@@ -778,22 +778,22 @@ ML Model
         ▼
 Predicted Churn Risk
         │
-        ├────────────┐
+        ├───────────────┐
         │               │
         ▼               ▼
 Behaviour Analysis   Customer Value
         │               │
         └───────┬───────┘
-                  ▼
-       Retention Intelligence
+                ▼
+      Retention Intelligence
                 │
-      ┌───────┴────────┐
-        ▼                    ▼
-   Streamlit              AI Agent
-   Dashboard             LangChain
-                            │
-                            ▼
-                         Groq LLM
+        ┌───────┴────────┐
+        ▼                ▼
+   Streamlit         AI Agent
+   Dashboard        LangChain
+                       │
+                       ▼
+                    Groq LLM
 ```
 
 ---
