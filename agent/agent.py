@@ -30,28 +30,18 @@ IMPORTANT DESIGN PRINCIPLE
 
 Simple questions should NOT call the LLM.
 
-For example:
+Examples:
 
-    "summary of retention"
+    "What is the retention summary?"
+    "Which customers have the highest predicted churn risk?"
+    "Which customers should we prioritize for retention?"
 
-should directly call:
+These questions can be answered directly from the structured
+retention-intelligence dataset.
 
-    get_retention_summary()
-
-instead of:
-
-    User
-      -> Groq
-      -> Tool
-      -> Groq
-      -> Answer
-
-
-This significantly reduces response time.
-
-The LLM is reserved for questions that actually require
-reasoning or combining multiple pieces of information.
-
+The LLM is reserved for questions that require reasoning,
+explanation, comparison, or combining multiple pieces of
+information.
 
 SOURCE OF TRUTH
 ---------------
@@ -117,11 +107,10 @@ from agent.tool import (
 # TOOL COLLECTION
 # ============================================================
 
-# These are the tools available to the LangChain agent.
+# These tools are available to the LangChain agent.
 #
-# IMPORTANT:
-# The fast router below can call these tools directly without
-# involving the LLM.
+# The fast router can also invoke the deterministic tools
+# directly without involving the LLM.
 
 TOOLS = [
     get_customer_profile,
@@ -137,9 +126,9 @@ TOOLS = [
 # ============================================================
 
 """
-The LLM is created only once when this module is imported.
+The LLM is initialized once when this module is imported.
 
-The model is used ONLY for complex questions.
+The LLM is used ONLY for complex questions.
 
 Simple questions are handled by fast_route().
 """
@@ -149,10 +138,10 @@ llm = ChatGroq(
     temperature=TEMPERATURE,
     api_key=GROQ_API_KEY,
 
-    # Prevent unnecessary retries from making the UI feel slow.
+    # Limit unnecessary retry delays.
     max_retries=1,
 
-    # Prevent the request from hanging for a very long time.
+    # Prevent long-running requests from blocking the UI.
     timeout=20,
 )
 
@@ -164,16 +153,19 @@ llm = ChatGroq(
 """
 Create the LangChain agent.
 
-This agent is used only when the fast router cannot confidently
-handle the question.
+The LangChain agent is the fallback reasoning layer.
 
 Therefore:
 
-    Simple question
-        -> direct tool
+    Simple deterministic question
+            |
+            v
+       Direct Tool
 
-    Complex question
-        -> LangChain + Groq
+    Complex reasoning question
+            |
+            v
+       LangChain + Groq
 """
 
 agent = create_agent(
@@ -189,34 +181,34 @@ agent = create_agent(
 
 def normalize_tool_result(result):
     """
-    Convert a LangChain tool result into a normal Python object.
+    Convert different tool-result formats into a predictable
+    Python representation.
 
-    Different LangChain versions may return:
+    Supported common outputs include:
+
         - dict
         - string
         - JSON string
-        - other serializable objects
-
-    This function makes the rest of the code easier to handle.
+        - dictionary-like objects
     """
 
-    # Already a dictionary.
+    # Already normalized.
     if isinstance(result, dict):
         return result
 
-    # Already a string.
+    # String result.
     if isinstance(result, str):
 
         text = result.strip()
 
-        # Try JSON decoding.
+        # Attempt JSON decoding first.
         try:
             return json.loads(text)
 
         except Exception:
             return text
 
-    # Try converting other objects into a dictionary.
+    # Generic dictionary-like object.
     try:
         return dict(result)
 
@@ -245,18 +237,11 @@ def extract_customer_id(
         "Why is 54321 at risk?"
             -> "54321"
 
-    The function intentionally looks for a numeric ID.
-
     Returns:
-        Customer ID as string, or None.
+        Customer ID as a string, or None.
     """
 
-    # Look for phrases such as:
-    #
-    # customer 12345
-    # customer ID 12345
-    # customer id: 12345
-
+    # Match explicit customer references.
     match = re.search(
         r"(?:customer\s*(?:id)?\s*[:#-]?\s*)(\d+)",
         question,
@@ -266,13 +251,7 @@ def extract_customer_id(
     if match:
         return match.group(1)
 
-    # If no explicit "customer" keyword exists,
-    # look for a standalone numeric identifier.
-    #
-    # This is useful for questions such as:
-    #
-    # "12345 churn probability"
-
+    # Match a standalone numeric identifier.
     standalone = re.search(
         r"\b(\d{3,})\b",
         question,
@@ -293,7 +272,7 @@ def extract_top_n(
     default: int = 10,
 ) -> int:
     """
-    Extract a requested number from the question.
+    Extract a requested result count.
 
     Examples:
 
@@ -306,8 +285,7 @@ def extract_top_n(
         "highest risk customers"
             -> 10
 
-    The maximum is deliberately limited to 50 so that very
-    large responses are not sent to the LLM.
+    The maximum is deliberately limited to 50.
     """
 
     match = re.search(
@@ -325,17 +303,21 @@ def extract_top_n(
     except ValueError:
         return default
 
-    # Keep requests inside a safe range.
-    return max(1, min(value, 50))
+    return max(
+        1,
+        min(value, 50),
+    )
 
 
 # ============================================================
 # HELPER: FORMAT PROBABILITY
 # ============================================================
 
-def format_probability(value) -> str:
+def format_probability(
+    value,
+) -> str:
     """
-    Convert a probability into a readable percentage.
+    Convert a probability value into a readable percentage.
 
     Examples:
 
@@ -352,7 +334,7 @@ def format_probability(value) -> str:
     except (TypeError, ValueError):
         return "N/A"
 
-    # Decimal probability.
+    # Convert decimal probability to percentage.
     if 0 <= numeric <= 1:
         numeric *= 100
 
@@ -367,8 +349,8 @@ def format_customer_profile(
     result: dict,
 ) -> str:
     """
-    Convert the customer profile tool result into a clean
-    human-readable response.
+    Convert customer-profile tool output into a readable
+    Streamlit response.
 
     No LLM is required for this formatting.
     """
@@ -379,6 +361,7 @@ def format_customer_profile(
         return str(result)
 
     if result.get("status") == "not_found":
+
         return result.get(
             "message",
             "Customer was not found.",
@@ -474,6 +457,9 @@ def format_behavior(
 ) -> str:
     """
     Format behavioral-analysis information.
+
+    This is a deterministic presentation layer; the LLM is
+    not required for the basic behavioral output.
     """
 
     result = normalize_tool_result(result)
@@ -482,6 +468,7 @@ def format_behavior(
         return str(result)
 
     if result.get("status") == "not_found":
+
         return result.get(
             "message",
             "Customer was not found.",
@@ -565,10 +552,10 @@ def format_customer_list(
     title: str,
 ) -> str:
     """
-    Format high-risk or priority customer results.
+    Format a list returned by the high-risk or priority tools.
 
-    The formatting is intentionally simple so the result can
-    be displayed directly inside Streamlit.
+    The output is intentionally deterministic so the LLM is
+    not required merely to format a ranking result.
     """
 
     result = normalize_tool_result(result)
@@ -582,7 +569,11 @@ def format_customer_list(
     )
 
     if not customers:
-        return f"### {title}\n\nNo customers were found."
+
+        return (
+            f"### {title}\n\n"
+            "No customers were found."
+        )
 
     lines = [
         f"### {title}",
@@ -643,7 +634,7 @@ def format_customer_list(
         )
 
         lines.append(
-            f"- Priority: {priority}"
+            f"- Retention Priority: {priority}"
         )
 
         lines.append(
@@ -655,7 +646,7 @@ def format_customer_list(
         )
 
         lines.append(
-            f"- Action: {action}"
+            f"- Candidate Action: {action}"
         )
 
         lines.append("")
@@ -673,9 +664,7 @@ def format_summary(
     """
     Format the overall retention summary.
 
-    All numbers come directly from the retention tool.
-
-    The LLM is NOT involved.
+    All values come directly from the retention tool.
     """
 
     result = normalize_tool_result(result)
@@ -753,7 +742,7 @@ def format_summary(
         "",
     ]
 
-    # Add risk distribution.
+    # Risk distribution.
     for risk, count in risk_distribution.items():
 
         try:
@@ -774,7 +763,7 @@ def format_summary(
         ]
     )
 
-    # Add priority distribution.
+    # Priority distribution.
     for priority, count in priority_distribution.items():
 
         try:
@@ -795,7 +784,7 @@ def format_summary(
         ]
     )
 
-    # Add behavioral distribution.
+    # Behavioral distribution.
     for behavior, count in behavioral_distribution.items():
 
         try:
@@ -819,32 +808,50 @@ def fast_route(
     question: str,
 ) -> Optional[str]:
     """
-    Handle simple deterministic questions without using Groq.
+    Handle deterministic questions without using Groq.
 
-    This function is the MAIN PERFORMANCE OPTIMIZATION.
+    This is the primary performance optimization.
 
-    It returns:
-        str
+    Routing principle:
+
+        Simple question
+            |
+            v
+        Direct tool
+            |
+            v
+        Immediate response
+
+        Complex question
+            |
+            v
+        Return None
+            |
+            v
+        LangChain + Groq
+
+    Returns:
+        str:
             When the question can be answered directly.
 
-        None
+        None:
             When the question requires the full LangChain agent.
     """
 
     # --------------------------------------------------------
-    # Normalize the question
+    # Normalize question
     # --------------------------------------------------------
 
     q = question.lower().strip()
 
-    # Remove unnecessary punctuation.
+    # Remove punctuation that could interfere with matching.
     q_clean = re.sub(
         r"[?!.,]+",
         " ",
         q,
     )
 
-    # Normalize repeated spaces.
+    # Normalize repeated whitespace.
     q_clean = re.sub(
         r"\s+",
         " ",
@@ -876,11 +883,36 @@ def fast_route(
 
         result = get_retention_summary.invoke({})
 
-        return format_summary(result)
+        return format_summary(
+            result
+        )
 
     # --------------------------------------------------------
-    # ROUTE 2: HIGH-RISK CUSTOMERS
+    # ROUTE 2: HIGHEST PREDICTED CHURN RISK
     # --------------------------------------------------------
+    #
+    # IMPORTANT:
+    #
+    # These are deterministic ranking questions.
+    #
+    # The answer already exists in the
+    # predicted_churn_risk field.
+    #
+    # Therefore:
+    #
+    #     NO Groq
+    #     NO LangChain reasoning
+    #
+    # This route specifically covers natural-language
+    # variations such as:
+    #
+    #     "Which customers have the highest predicted
+    #      churn risk?"
+    #
+    #     "Who has the highest churn probability?"
+    #
+    #     "Show the customers most likely to churn."
+    #
 
     high_risk_keywords = [
         "high risk customers",
@@ -890,7 +922,28 @@ def fast_route(
         "most risky customers",
         "customers at highest risk",
         "customers most likely to churn",
+        "most likely customers to churn",
         "likely to churn",
+
+        # Explicit ML-risk wording.
+        "highest predicted churn risk",
+        "highest predicted churn probability",
+        "highest churn risk",
+        "highest churn probability",
+
+        "customers with highest churn risk",
+        "customers with highest predicted churn risk",
+        "customers with highest predicted churn probability",
+
+        "which customers have the highest churn risk",
+        "which customers have the highest predicted churn risk",
+        "which customers have the highest predicted churn probability",
+
+        "who has the highest churn risk",
+        "who has the highest predicted churn risk",
+
+        "who has the highest churn probability",
+        "who has the highest predicted churn probability",
     ]
 
     if any(
@@ -911,12 +964,27 @@ def fast_route(
 
         return format_customer_list(
             result,
-            f"Top {limit} High-Risk Customers",
+            f"Top {limit} Highest Churn-Risk Customers",
         )
 
     # --------------------------------------------------------
-    # ROUTE 3: PRIORITY CUSTOMERS
+    # ROUTE 3: RETENTION PRIORITY CUSTOMERS
     # --------------------------------------------------------
+    #
+    # IMPORTANT:
+    #
+    # Retention priority is already calculated by the
+    # Retention Intelligence layer.
+    #
+    # The agent should retrieve that decision rather than
+    # recompute it or ask the LLM to infer it.
+    #
+    # This route specifically handles:
+    #
+    #     "Which customers should we prioritize for retention?"
+    #
+    # and similar questions.
+    #
 
     priority_keywords = [
         "priority customers",
@@ -926,6 +994,25 @@ def fast_route(
         "customers to retain",
         "customers needing retention",
         "retention targets",
+
+        # Natural-language priority wording.
+        "prioritize for retention",
+        "should we prioritize",
+        "should be prioritized",
+        "who should we prioritize",
+        "which customers should we prioritize",
+        "customers should we prioritize",
+        "customers to prioritize",
+        "customers we should prioritize",
+
+        "who should be prioritized for retention",
+        "which customers should be prioritized for retention",
+
+        "customers needing immediate retention",
+        "customers needing immediate action",
+
+        "who needs retention action",
+        "who needs immediate retention action",
     ]
 
     if any(
@@ -988,7 +1075,9 @@ def fast_route(
                 }
             )
 
-            return format_behavior(result)
+            return format_behavior(
+                result
+            )
 
         # ----------------------------------------------------
         # Profile questions
@@ -1015,7 +1104,9 @@ def fast_route(
                 }
             )
 
-            return format_customer_profile(result)
+            return format_customer_profile(
+                result
+            )
 
         # ----------------------------------------------------
         # Direct churn probability questions
@@ -1077,8 +1168,7 @@ def fast_route(
         #
         # If a question clearly refers to one customer but
         # doesn't match a more specific category, retrieving
-        # the profile is still faster and safer than calling
-        # the LLM.
+        # the profile is still faster than calling the LLM.
         #
 
         direct_customer_keywords = [
@@ -1107,8 +1197,8 @@ def fast_route(
     # NO FAST ROUTE
     # --------------------------------------------------------
 
-    # Returning None tells run_full_agent() to use
-    # LangChain + Groq.
+    # Returning None sends the question to the full
+    # LangChain + Groq reasoning layer.
     return None
 
 
@@ -1123,8 +1213,8 @@ def extract_final_response(
     Extract the final assistant response from a LangChain
     agent invocation.
 
-    LangChain versions may return different structures,
-    so this function handles common formats.
+    Different LangChain versions can return different
+    response structures, so common formats are handled.
     """
 
     # --------------------------------------------------------
@@ -1132,6 +1222,7 @@ def extract_final_response(
     # --------------------------------------------------------
 
     if isinstance(result, str):
+
         return result.strip()
 
     # --------------------------------------------------------
@@ -1140,23 +1231,17 @@ def extract_final_response(
 
     if isinstance(result, dict):
 
-        # Common LangGraph/LangChain structure:
-        #
-        # {
-        #     "messages": [...]
-        # }
-
         messages = result.get(
             "messages"
         )
 
         if messages:
 
-            # Process messages from the end because the
-            # final AI message is normally last.
+            # Process messages backwards because the final
+            # AI response is normally the last message.
             for message in reversed(messages):
 
-                # Dictionary message.
+                # Dictionary-style message.
                 if isinstance(
                     message,
                     dict,
@@ -1167,11 +1252,12 @@ def extract_final_response(
                     )
 
                     if content:
+
                         return str(
                             content
                         ).strip()
 
-                # Object message.
+                # Object-style message.
                 content = getattr(
                     message,
                     "content",
@@ -1180,8 +1266,8 @@ def extract_final_response(
 
                 if content:
 
-                    # Some LangChain responses may return
-                    # a list of content blocks.
+                    # Some LangChain versions return content
+                    # as a list of blocks.
                     if isinstance(
                         content,
                         list,
@@ -1201,16 +1287,19 @@ def extract_final_response(
                                 )
 
                                 if text:
+
                                     text_parts.append(
                                         str(text)
                                     )
 
                             else:
+
                                 text_parts.append(
                                     str(block)
                                 )
 
                         if text_parts:
+
                             return "\n".join(
                                 text_parts
                             ).strip()
@@ -1219,14 +1308,17 @@ def extract_final_response(
                         content
                     ).strip()
 
-        # Some agent versions may return:
+        # Some agent versions return:
         #
-        # {"output": "..."}
+        #     {"output": "..."}
+        #
+
         output = result.get(
             "output"
         )
 
         if output:
+
             return str(
                 output
             ).strip()
@@ -1246,22 +1338,17 @@ def run_full_agent(
     question: str,
 ) -> str:
     """
-    Execute the complete decision process.
+    Execute the complete retention-agent decision process.
 
-    First:
+    Processing order:
 
-        fast_route()
+        1. Validate question
+        2. Try deterministic fast routing
+        3. If matched, return immediately
+        4. Otherwise use LangChain + Groq
 
-    is attempted.
-
-    If the question is simple:
-        -> return immediately
-
-    Otherwise:
-        -> LangChain agent
-        -> Groq
-        -> tools
-        -> final answer
+    This ensures that simple ranking and lookup queries do
+    not incur LLM latency.
     """
 
     # --------------------------------------------------------
@@ -1291,12 +1378,11 @@ def run_full_agent(
             question
         )
 
-    except Exception as exc:
+    except Exception:
 
-        # If the fast router itself fails, do not silently
-        # hide the error.
-        #
-        # However, we can still attempt the full agent.
+        # If deterministic routing fails unexpectedly,
+        # fall back to the full agent rather than breaking
+        # the application.
         fast_answer = None
 
     fast_time = (
@@ -1315,19 +1401,25 @@ def run_full_agent(
     # --------------------------------------------------------
     # STEP 3: COMPLEX QUESTION
     # --------------------------------------------------------
-
-    """
-    Only questions that cannot be confidently answered by
-    the deterministic tools reach this section.
-
-    This is where Groq/LangChain is intentionally used.
-    """
+    #
+    # Only questions that cannot be answered confidently
+    # through deterministic tools reach this section.
+    #
+    # Examples:
+    #
+    #     "Why is customer 2 Priority 2?"
+    #
+    #     "Compare customers 10 and 20."
+    #
+    #     "Explain why this customer is risky."
+    #
+    # These questions genuinely benefit from LLM reasoning.
+    #
 
     try:
 
         start_time = time.perf_counter()
 
-        # LangChain agent invocation.
         result = agent.invoke(
             {
                 "messages": [
@@ -1344,7 +1436,6 @@ def run_full_agent(
             - start_time
         )
 
-        # Extract the final answer.
         answer = extract_final_response(
             result
         )
@@ -1353,8 +1444,6 @@ def run_full_agent(
 
     except Exception as exc:
 
-        # Return a clean error to Streamlit instead of exposing
-        # a large traceback to the end user.
         return (
             "### Agent Error\n\n"
             f"{exc}"
@@ -1369,13 +1458,14 @@ def ask_agent(
     question: str,
 ) -> str:
     """
-    Public interface used by the Streamlit application.
+    Public interface used by Streamlit.
 
-    Streamlit should call:
+    Streamlit calls:
 
         answer = ask_agent(question)
 
-    This function keeps the Streamlit code simple.
+    Keeping this interface simple allows the UI to remain
+    independent of the internal routing implementation.
     """
 
     return run_full_agent(
@@ -1395,7 +1485,7 @@ def main():
 
         python -m agent.agent
 
-    Then type questions manually.
+    Then enter questions manually.
     """
 
     print()

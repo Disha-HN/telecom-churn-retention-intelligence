@@ -450,15 +450,15 @@ with st.sidebar:
 
     st.subheader("Navigation")
 
-    page = st.radio(
-        "Go to",
+    page = st.sidebar.radio(
+        "Navigate",
         [
             "📊 Executive Dashboard",
             "👤 Customer Analysis",
             "🚨 High-Risk Customers",
             "🧠 Retention Intelligence",
             "🤖 AI Retention Agent",
-            "➕ Add New Customer",
+            "📈 Retention Operations",
         ],
         label_visibility="collapsed",
     )
@@ -544,8 +544,11 @@ if page == "📊 Executive Dashboard":
         .isin(["high", "very high"])
         .sum()
     )
-
-    retention_priority_count = total_customers
+    priority_1_count = int(
+        (df["retention_priority"] == "Priority 1").sum())
+    priority_2_count = int(
+        (df["retention_priority"] == "Priority 2").sum())
+    retention_priority_count = priority_1_count + priority_2_count
 
     average_churn_risk = (
         df["predicted_churn_risk"].mean()
@@ -567,8 +570,9 @@ if page == "📊 Executive Dashboard":
 
     with m3:
         display_metric_card(
-            "Retention Priorities",
-            f"{retention_priority_count:,}"
+            "Priority 1 + 2 Customers",
+            f"{retention_priority_count:,}",
+            "Customers currently assigned higher retention attention."
         )
 
     with m4:
@@ -881,10 +885,30 @@ elif page == "👤 Customer Analysis":
 
 elif page == "🚨 High-Risk Customers":
 
+    # --------------------------------------------------------
+    # PAGE HEADER
+    # --------------------------------------------------------
+
     display_page_title(
         "🚨 High-Risk Customers",
-        "Customers requiring immediate retention attention."
+        "Customers ranked by predicted churn probability."
     )
+
+    # --------------------------------------------------------
+    # HIGH-RISK CUSTOMER FILTER
+    #
+    # This view focuses on customers classified as High or
+    # Very High according to the ML-derived risk tier.
+    #
+    # Important distinction:
+    # Risk ranking answers:
+    # "Who is most likely to churn?"
+    #
+    # Retention priority answers:
+    # "Who should the business prioritize?"
+    #
+    # These are intentionally kept as separate concepts.
+    # --------------------------------------------------------
 
     high_risk_df = df[
         df["risk_tier"]
@@ -892,6 +916,13 @@ elif page == "🚨 High-Risk Customers":
         .str.lower()
         .isin(["high", "very high"])
     ].copy()
+
+    # --------------------------------------------------------
+    # EMPTY-STATE HANDLING
+    #
+    # Prevent downstream operations such as iloc[0] when
+    # no customers satisfy the selected risk criteria.
+    # --------------------------------------------------------
 
     if high_risk_df.empty:
 
@@ -902,11 +933,31 @@ elif page == "🚨 High-Risk Customers":
     else:
 
         st.write(
-            f"**{len(high_risk_df):,} high-risk customers identified.**"
+            f"**{len(high_risk_df):,} customers in the "
+            f"High / Very High risk tiers.**"
         )
 
         # ----------------------------------------------------
-        # SORT BY CHURN RISK
+        # RISK INTERPRETATION
+        #
+        # The customer ranking on this page is based entirely
+        # on the ML predicted churn probability.
+        #
+        # Retention priority is calculated separately using
+        # risk, customer value and behavioural evidence.
+        # ----------------------------------------------------
+
+        st.info(
+            "This view ranks customers by ML-predicted churn "
+            "probability. Retention Priority is a separate "
+            "business decision that also considers customer "
+            "value and behavioural evidence."
+        )
+
+        # ----------------------------------------------------
+        # SORT BY ML CHURN RISK
+        #
+        # Highest predicted churn probability appears first.
         # ----------------------------------------------------
 
         high_risk_df = high_risk_df.sort_values(
@@ -916,6 +967,9 @@ elif page == "🚨 High-Risk Customers":
 
         # ----------------------------------------------------
         # TOP CUSTOMER METRICS
+        #
+        # These metrics provide a quick summary of the highest
+        # churn-risk customer and the size of the risk population.
         # ----------------------------------------------------
 
         top_risk = high_risk_df.iloc[0]
@@ -923,8 +977,9 @@ elif page == "🚨 High-Risk Customers":
         m1, m2, m3 = st.columns(3)
 
         with m1:
+
             display_metric_card(
-                "Highest Risk Customer",
+                "Highest Churn-Risk Customer",
                 str(
                     clean_value(
                         top_risk["id"]
@@ -933,6 +988,7 @@ elif page == "🚨 High-Risk Customers":
             )
 
         with m2:
+
             display_metric_card(
                 "Highest Churn Risk",
                 format_probability(
@@ -941,6 +997,7 @@ elif page == "🚨 High-Risk Customers":
             )
 
         with m3:
+
             display_metric_card(
                 "High-Risk Population",
                 f"{len(high_risk_df):,}"
@@ -949,8 +1006,19 @@ elif page == "🚨 High-Risk Customers":
         st.divider()
 
         # ----------------------------------------------------
-        # TABLE
+        # CUSTOMER RISK TABLE
+        #
+        # ML risk is shown together with behavioural state,
+        # customer value and retention priority.
+        #
+        # This allows the user to understand why a high-risk
+        # customer may still receive a different retention
+        # priority.
         # ----------------------------------------------------
+
+        st.subheader(
+            "Customers Ranked by Churn Probability"
+        )
 
         display_columns = [
             "id",
@@ -962,6 +1030,8 @@ elif page == "🚨 High-Risk Customers":
             "candidate_action",
         ]
 
+        # Keep only columns that are available in the processed
+        # retention-intelligence dataset.
         display_columns = [
             col
             for col in display_columns
@@ -971,6 +1041,14 @@ elif page == "🚨 High-Risk Customers":
         table_df = high_risk_df[
             display_columns
         ].copy()
+
+        # ----------------------------------------------------
+        # DISPLAY-ONLY RISK FORMATTING
+        #
+        # The original dataframe retains numeric probabilities.
+        # Formatting is applied only to the table copy so that
+        # the underlying data remains suitable for calculations.
+        # ----------------------------------------------------
 
         if "predicted_churn_risk" in table_df.columns:
 
@@ -987,6 +1065,10 @@ elif page == "🚨 High-Risk Customers":
 
         # ----------------------------------------------------
         # DOWNLOAD
+        #
+        # The downloadable file retains the original numeric
+        # churn-risk values rather than the display-formatted
+        # percentages.
         # ----------------------------------------------------
 
         csv_data = high_risk_df.to_csv(
@@ -999,8 +1081,6 @@ elif page == "🚨 High-Risk Customers":
             file_name="high_risk_customers.csv",
             mime="text/csv",
         )
-
-
 # ============================================================
 # PAGE 4
 # RETENTION INTELLIGENCE
@@ -1008,18 +1088,131 @@ elif page == "🚨 High-Risk Customers":
 
 elif page == "🧠 Retention Intelligence":
 
+    # --------------------------------------------------------
+    # PAGE HEADER
+    # --------------------------------------------------------
+    #
+    # This page represents the business decision-support layer.
+    #
+    # The ML model answers:
+    #   "How likely is the customer to churn?"
+    #
+    # This layer adds:
+    #   Behaviour + Value + Business Priority + Candidate Action
+    #
+    # The objective is therefore to move from prediction toward
+    # actionable retention prioritization.
+    # --------------------------------------------------------
+
     display_page_title(
         "🧠 Retention Intelligence",
-        "Behavioral evidence used to support retention decisions."
+        "Combine churn risk, behavioural deterioration and customer "
+        "value to support retention prioritization."
     )
 
     # --------------------------------------------------------
-    # BEHAVIORAL STATES
+    # RISK-TIER INTERPRETATION
+    # --------------------------------------------------------
+    #
+    # Risk tiers are relative quartile-based segments created
+    # from predicted churn probabilities.
+    #
+    # Therefore:
+    #   Very High ≠ churn probability above 50%
+    #
+    # It means the customer belongs to the highest-risk quartile
+    # within the scored customer population.
+    # --------------------------------------------------------
+
+    st.info(
+        "Risk tiers are relative segments of the scored customer "
+        "population. 'Very High' represents the top churn-risk "
+        "quartile; it does not mean that every customer has a "
+        "churn probability above 50%."
+    )
+
+    # --------------------------------------------------------
+    # PORTFOLIO OVERVIEW
+    # --------------------------------------------------------
+    #
+    # Provides a quick view of the retention population.
+    # --------------------------------------------------------
+
+    st.subheader(
+        "Retention Portfolio Overview"
+    )
+
+    total_customers = len(df)
+
+    very_high_count = int(
+        (
+            df["risk_tier"].astype(str)
+            == "Very High"
+        ).sum()
+    )
+
+    priority_1_count = int(
+        (
+            df["retention_priority"].astype(str)
+            == "Priority 1"
+        ).sum()
+    )
+
+    priority_2_count = int(
+        (
+            df["retention_priority"].astype(str)
+            == "Priority 2"
+        ).sum()
+    )
+
+    c1, c2, c3, c4 = st.columns(4)
+
+    with c1:
+
+        display_metric_card(
+            "Customers",
+            f"{total_customers:,}"
+        )
+
+    with c2:
+
+        display_metric_card(
+            "Very High Risk",
+            f"{very_high_count:,}"
+        )
+
+    with c3:
+
+        display_metric_card(
+            "Priority 1",
+            f"{priority_1_count:,}"
+        )
+
+    with c4:
+
+        display_metric_card(
+            "Priority 2",
+            f"{priority_2_count:,}"
+        )
+
+    st.divider()
+
+    # --------------------------------------------------------
+    # BEHAVIOURAL STATES
+    # --------------------------------------------------------
+    #
+    # Behavioural states summarize observable deterioration
+    # patterns across the available monthly observations.
+    #
+    # They are descriptive analytical categories and should not
+    # be interpreted as causal explanations of churn.
     # --------------------------------------------------------
 
     if "behavioral_state" in df.columns:
 
-        st.subheader("Behavioral State Distribution")
+        st.subheader(
+            "Behavioural State Distribution"
+        )
 
         behavioral_counts = (
             df["behavioral_state"]
@@ -1029,21 +1222,22 @@ elif page == "🧠 Retention Intelligence":
         )
 
         behavioral_counts.columns = [
-            "Behavioral State",
+            "Behavioural State",
             "Customers"
         ]
 
         fig_behavior = px.bar(
             behavioral_counts,
-            x="Behavioral State",
-            y="Customers",
-            title="Customer Behavioral States",
+            x="Customers",
+            y="Behavioural State",
+            orientation="h",
+            title="Customer Distribution by Behavioural State"
         )
 
         fig_behavior.update_layout(
             showlegend=False,
             plot_bgcolor="white",
-            paper_bgcolor="white",
+            paper_bgcolor="white"
         )
 
         st.plotly_chart(
@@ -1051,11 +1245,28 @@ elif page == "🧠 Retention Intelligence":
             width="stretch"
         )
 
+        st.caption(
+            "Behavioural states summarize observed customer "
+            "deterioration patterns across the available monthly period."
+        )
+
+    st.divider()
+
     # --------------------------------------------------------
-    # DETERIORATION
+    # DETERIORATION SIGNALS
+    # --------------------------------------------------------
+    #
+    # These metrics show the number of customers exhibiting
+    # deterioration across multiple behavioural dimensions.
+    #
+    # A threshold of >= 2 is used here to focus the dashboard
+    # on customers showing deterioration across more than one
+    # behavioural dimension rather than a single isolated signal.
     # --------------------------------------------------------
 
-    st.subheader("Customer Deterioration Signals")
+    st.subheader(
+        "Customer Deterioration Signals"
+    )
 
     d1, d2, d3 = st.columns(3)
 
@@ -1063,17 +1274,17 @@ elif page == "🧠 Retention Intelligence":
 
         if "recent_deterioration_count" in df.columns:
 
+            recent_values = pd.to_numeric(
+                df["recent_deterioration_count"],
+                errors="coerce"
+            )
+
             count = int(
-                (
-                    pd.to_numeric(
-                        df["recent_deterioration_count"],
-                        errors="coerce"
-                    )
-                    > 0
-                ).sum()
+                (recent_values >= 2).sum()
             )
 
         else:
+
             count = 0
 
         display_metric_card(
@@ -1085,17 +1296,17 @@ elif page == "🧠 Retention Intelligence":
 
         if "persistent_deterioration_count" in df.columns:
 
+            persistent_values = pd.to_numeric(
+                df["persistent_deterioration_count"],
+                errors="coerce"
+            )
+
             count = int(
-                (
-                    pd.to_numeric(
-                        df["persistent_deterioration_count"],
-                        errors="coerce"
-                    )
-                    > 0
-                ).sum()
+                (persistent_values >= 2).sum()
             )
 
         else:
+
             count = 0
 
         display_metric_card(
@@ -1107,38 +1318,63 @@ elif page == "🧠 Retention Intelligence":
 
         if "coordinated_deterioration_count" in df.columns:
 
+            coordinated_values = pd.to_numeric(
+                df["coordinated_deterioration_count"],
+                errors="coerce"
+            )
+
             count = int(
-                (
-                    pd.to_numeric(
-                        df["coordinated_deterioration_count"],
-                        errors="coerce"
-                    )
-                    > 0
-                ).sum()
+                (coordinated_values >= 4).sum()
             )
 
         else:
+
             count = 0
 
         display_metric_card(
-            "Coordinated Deterioration",
+            "Broad Deterioration",
             f"{count:,}"
         )
+
+    st.caption(
+        "Deterioration counts are based on the project's predefined "
+        "behavioural definitions."
+    )
 
     st.divider()
 
     # --------------------------------------------------------
     # RETENTION PRIORITY
     # --------------------------------------------------------
+    #
+    # Retention priority is a business-rule layer.
+    #
+    # It is NOT simply the ranking of predicted churn probability.
+    #
+    # The project's priority logic considers:
+    #   - churn risk
+    #   - customer value
+    #   - behavioural evidence
+    # --------------------------------------------------------
 
     if "retention_priority" in df.columns:
 
-        st.subheader("Retention Priority Distribution")
+        st.subheader(
+            "Retention Priority Distribution"
+        )
 
         priority_counts = (
             df["retention_priority"]
             .astype(str)
             .value_counts()
+            .reindex(
+                [
+                    "Priority 1",
+                    "Priority 2",
+                    "Priority 3"
+                ],
+                fill_value=0
+            )
             .reset_index()
         )
 
@@ -1151,13 +1387,13 @@ elif page == "🧠 Retention Intelligence":
             priority_counts,
             x="Retention Priority",
             y="Customers",
-            title="Retention Priority",
+            title="Customer Distribution by Retention Priority"
         )
 
         fig_priority.update_layout(
             showlegend=False,
             plot_bgcolor="white",
-            paper_bgcolor="white",
+            paper_bgcolor="white"
         )
 
         st.plotly_chart(
@@ -1165,13 +1401,106 @@ elif page == "🧠 Retention Intelligence":
             width="stretch"
         )
 
+        st.caption(
+            "Retention priority combines churn risk, customer value "
+            "and behavioural evidence. It is separate from the ML "
+            "churn-risk ranking."
+        )
+
+    st.divider()
+
     # --------------------------------------------------------
-    # ACTION RECOMMENDATIONS
+    # RISK × VALUE
+    # --------------------------------------------------------
+    #
+    # This view connects predicted churn risk with relative
+    # customer value.
+    #
+    # It helps explain why the customer with the highest churn
+    # probability is not necessarily the customer with the
+    # highest retention priority.
+    #
+    # Value tier is a relative value indicator. It should not be
+    # interpreted as CLV, profit or customer margin.
+    # --------------------------------------------------------
+
+    if (
+        "risk_tier" in df.columns
+        and "value_tier" in df.columns
+    ):
+
+        st.subheader(
+            "Risk × Value Retention View"
+        )
+
+        risk_value_df = (
+            df.groupby(
+                [
+                    "risk_tier",
+                    "value_tier"
+                ],
+                observed=True
+            )
+            .size()
+            .reset_index(
+                name="Customers"
+            )
+        )
+
+        risk_value_pivot = risk_value_df.pivot(
+            index="risk_tier",
+            columns="value_tier",
+            values="Customers"
+        ).fillna(0)
+
+        risk_order = [
+            "Low",
+            "Moderate",
+            "High",
+            "Very High"
+        ]
+
+        value_order = [
+            "Lower",
+            "Moderate",
+            "Higher",
+            "Highest"
+        ]
+
+        risk_value_pivot = risk_value_pivot.reindex(
+            index=risk_order,
+            columns=value_order,
+            fill_value=0
+        )
+
+        st.dataframe(
+            risk_value_pivot,
+            width="stretch"
+        )
+
+        st.caption(
+            "Risk and value are separate dimensions. Retention "
+            "priority uses these dimensions together with behavioural "
+            "evidence."
+        )
+
+    st.divider()
+
+    # --------------------------------------------------------
+    # CANDIDATE RETENTION ACTIONS
+    # --------------------------------------------------------
+    #
+    # Candidate actions identify the type of retention review that
+    # may be appropriate based on the available evidence.
+    #
+    # These are NOT proven causal treatments.
     # --------------------------------------------------------
 
     if "candidate_action" in df.columns:
 
-        st.subheader("Candidate Retention Actions")
+        st.subheader(
+            "Candidate Retention Actions"
+        )
 
         action_counts = (
             df["candidate_action"]
@@ -1188,10 +1517,272 @@ elif page == "🧠 Retention Intelligence":
         st.dataframe(
             action_counts,
             width="stretch",
-            hide_index=True,
+            hide_index=True
         )
 
+        st.caption(
+            "Candidate actions represent retention-review categories "
+            "generated by the intelligence layer. They do not establish "
+            "that a particular action will prevent churn."
+        )
 
+    st.divider()
+
+    # --------------------------------------------------------
+    # DECISION INTERPRETATION
+    # --------------------------------------------------------
+    #
+    # This short explanation makes the complete business flow
+    # explicit without introducing another model.
+    # --------------------------------------------------------
+
+    st.subheader(
+        "How Retention Intelligence Works"
+    )
+
+    st.markdown(
+        """
+        **1. Predict** → Estimate the customer's churn probability.
+
+        **2. Understand** → Identify observable behavioural deterioration.
+
+        **3. Assess Value** → Determine the customer's relative value tier.
+
+        **4. Prioritize** → Combine risk, behaviour and value through
+        the retention rules.
+
+        **5. Route** → Assign a candidate retention-review category.
+        """
+    )
+
+    st.info(
+        "The system separates prediction from decision-making: "
+        "the ML model estimates churn risk, while the retention-intelligence "
+        "layer converts risk, behaviour and value into business-oriented "
+        "retention prioritization."
+    )
+
+# ============================================================
+# PAGE 5
+# AI RETENTION AGENT
+# ============================================================
+
+elif page == "🤖 AI Retention Agent":
+
+    # --------------------------------------------------------
+    # PAGE HEADER
+    # --------------------------------------------------------
+    #
+    # The AI agent acts as the explanation and decision-support
+    # layer over the outputs generated by the analytical pipeline.
+    #
+    # ML Model
+    #     ↓
+    # Retention Intelligence
+    #     ↓
+    # AI Agent
+    #     ↓
+    # Business Explanation
+    # --------------------------------------------------------
+
+    display_page_title(
+        "🤖 AI Retention Agent",
+        "Ask questions about churn risk, customer behaviour and "
+        "retention priorities."
+    )
+
+    # --------------------------------------------------------
+    # AGENT AVAILABILITY
+    # --------------------------------------------------------
+    #
+    # The dashboard remains usable even if the optional AI agent
+    # dependencies or configuration are unavailable.
+    # --------------------------------------------------------
+
+    if not AGENT_AVAILABLE:
+
+        st.warning(
+            "The AI agent could not be initialized."
+        )
+
+        with st.expander(
+            "Technical information"
+        ):
+
+            st.code(
+                AGENT_ERROR or "Unknown error"
+            )
+
+    else:
+
+        # ----------------------------------------------------
+        # AGENT STATUS
+        # ----------------------------------------------------
+
+        st.success(
+            "AI Retention Agent is ready."
+        )
+
+        st.write(
+            "The agent explains ML churn-risk predictions using "
+            "behavioural evidence, customer value and retention "
+            "intelligence."
+        )
+
+        # ----------------------------------------------------
+        # AGENT ROLE
+        # ----------------------------------------------------
+        #
+        # The LLM does not replace the analytical pipeline.
+        #
+        # It consumes the prepared retention-intelligence outputs
+        # and converts them into business-oriented explanations.
+        # ----------------------------------------------------
+
+        st.info(
+            "The AI agent explains retention-intelligence outputs "
+            "using the customer data and business rules. It does not "
+            "retrain the ML model or independently change churn risk "
+            "or retention priority."
+        )
+
+        # ----------------------------------------------------
+        # SAMPLE QUESTIONS
+        # ----------------------------------------------------
+        #
+        # The first two questions intentionally represent different
+        # business decisions:
+        #
+        # 1. Highest churn risk
+        #    → ML probability ranking
+        #
+        # 2. Highest retention priority
+        #    → Risk + value + behavioural business rules
+        #
+        # This distinction is central to the project's architecture.
+        # ----------------------------------------------------
+
+        st.subheader(
+            "Example Questions"
+        )
+
+        example_questions = [
+            "Which customers have the highest predicted churn risk?",
+            "Which customers should we prioritize for retention?",
+            "What is the retention summary?",
+            "Analyze customer 2.",
+            "Why is customer 2 Priority 2?",
+            "What behavioural signals indicate customer deterioration?",
+        ]
+
+        selected_question = st.selectbox(
+            "Choose an example question",
+            ["Custom question"] + example_questions,
+        )
+
+        # ----------------------------------------------------
+        # QUESTION INPUT
+        # ----------------------------------------------------
+
+        if selected_question == "Custom question":
+
+            question = st.text_area(
+                "Ask the AI Retention Agent",
+                placeholder=(
+                    "Example: Which high-risk customers "
+                    "should the telecom company contact first?"
+                ),
+                height=120,
+            )
+
+        else:
+
+            question = selected_question
+
+            st.info(
+                f"Selected question: {question}"
+            )
+
+        # ----------------------------------------------------
+        # SOURCE-OF-TRUTH NOTE
+        # ----------------------------------------------------
+        #
+        # This reinforces that the agent is an interpretation
+        # layer rather than an independent prediction engine.
+        # ----------------------------------------------------
+
+        st.caption(
+            "Source of truth: the retention-intelligence dataset "
+            "generated by the ML and behavioural pipeline. The agent "
+            "explains these outputs but does not replace the underlying "
+            "analytical logic."
+        )
+
+        # ----------------------------------------------------
+        # ASK AGENT
+        # ----------------------------------------------------
+
+        if st.button(
+            "🤖 Ask Retention Agent",
+            width="stretch"
+        ):
+
+            # ------------------------------------------------
+            # INPUT VALIDATION
+            # ------------------------------------------------
+
+            if not question or not question.strip():
+
+                st.warning(
+                    "Please enter a question."
+                )
+
+            else:
+
+                # ------------------------------------------------
+                # AGENT EXECUTION
+                # ------------------------------------------------
+                #
+                # The question is passed to the existing agent
+                # implementation. The dashboard does not perform
+                # separate ML calculations here.
+                # ------------------------------------------------
+
+                with st.spinner(
+                    "Analyzing customer intelligence..."
+                ):
+
+                    try:
+
+                        response = ask_agent(
+                            question.strip()
+                        )
+
+                        # ----------------------------------------
+                        # AGENT RESPONSE
+                        # ----------------------------------------
+
+                        st.subheader(
+                            "🧠 Agent Response"
+                        )
+
+                        st.write(
+                            response
+                        )
+
+                    except Exception as e:
+
+                        # ----------------------------------------
+                        # ERROR HANDLING
+                        # ----------------------------------------
+
+                        st.error(
+                            "The AI agent encountered an error."
+                        )
+
+                        st.code(
+                            str(e)
+                        )
 # ============================================================
 # PAGE 5
 # AI RETENTION AGENT
@@ -1309,134 +1900,364 @@ elif page == "🤖 AI Retention Agent":
                         st.code(
                             str(e)
                         )
-
-
+                        
 # ============================================================
 # PAGE 6
-# ADD NEW CUSTOMER
+# RETENTION OPERATIONS
 # ============================================================
 
-elif page == "➕ Add New Customer":
-
+elif page == "📈 Retention Operations":
     display_page_title(
-        "➕ Add New Customer",
-        "Enter customer information for future churn assessment."
+        "📈 Retention Operations",
+        "Turn retention intelligence into a prioritized action queue for the retention team."
     )
+    # --------------------------------------------------------
+    # PURPOSE
+    # --------------------------------------------------------
+    # This page represents the operational layer of the system.
+    #
+    # Retention Intelligence determines:
+    #   Risk + Behaviour + Value → Priority + Candidate Action
+    #
+    # This page focuses on what the retention team should review
+    # and how the identified workload is distributed.
+    #
+    # It intentionally does not repeat the analytical views from
+    # the Retention Intelligence page.
+    # --------------------------------------------------------
 
     st.info(
-        "This page collects customer information. "
-        "A genuine ML prediction requires the complete "
-        "189-feature prepared model vector used during training."
+        "This page converts the retention-intelligence output into an "
+        "operational review queue. It helps the retention team understand "
+        "which customers require attention and what issue should be reviewed."
     )
 
-    st.subheader("Customer Information")
+    # ========================================================
+    # 1. CUSTOMERS REQUIRING RETENTION FOCUS
+    # ========================================================
 
-    c1, c2 = st.columns(2)
+    priority_1_df = df[
+        df["retention_priority"] == "Priority 1"
+    ].copy()
 
-    with c1:
+    priority_2_df = df[
+        df["retention_priority"] == "Priority 2"
+    ].copy()
 
-        new_customer_id = st.text_input(
-            "Customer ID",
-            placeholder="Example: NEW001"
+    priority_focus_df = df[
+        df["retention_priority"].isin(
+            ["Priority 1", "Priority 2"]
+        )
+    ].copy()
+
+    priority_1_count = len(priority_1_df)
+    priority_2_count = len(priority_2_df)
+    priority_focus_count = len(priority_focus_df)
+
+    st.subheader("🎯 Customers Requiring Retention Focus")
+
+    m1, m2, m3 = st.columns(3)
+
+    with m1:
+        display_metric_card(
+            "Customers Requiring Attention",
+            f"{priority_focus_count:,}"
         )
 
-        arpu = st.number_input(
-            "Average Revenue Per User (ARPU)",
-            min_value=0.0,
-            value=0.0,
-            step=10.0,
+    with m2:
+        display_metric_card(
+            "Priority 1",
+            f"{priority_1_count:,}"
         )
 
-        recharge_amount = st.number_input(
-            "Recharge Amount",
-            min_value=0.0,
-            value=0.0,
-            step=10.0,
+    with m3:
+        display_metric_card(
+            "Priority 2",
+            f"{priority_2_count:,}"
         )
 
-    with c2:
-
-        recharge_count = st.number_input(
-            "Recharge Count",
-            min_value=0,
-            value=0,
-            step=1,
-        )
-
-        outgoing_usage = st.number_input(
-            "Outgoing Usage",
-            min_value=0.0,
-            value=0.0,
-            step=10.0,
-        )
-
-        incoming_usage = st.number_input(
-            "Incoming Usage",
-            min_value=0.0,
-            value=0.0,
-            step=10.0,
-        )
+    st.caption(
+        "Priority 1 and Priority 2 represent the current retention-focus "
+        "population. Priority is determined by the project's retention rules, "
+        "not by churn probability alone."
+    )
 
     st.divider()
 
-    st.subheader("Customer Summary")
+    # ========================================================
+    # 2. RETENTION ACTION QUEUE
+    # ========================================================
 
-    summary_df = pd.DataFrame(
-        {
-            "Field": [
-                "Customer ID",
-                "ARPU",
-                "Recharge Amount",
-                "Recharge Count",
-                "Outgoing Usage",
-                "Incoming Usage",
-            ],
-            "Value": [
-                new_customer_id or "-",
-                f"{arpu:,.2f}",
-                f"{recharge_amount:,.2f}",
-                str(recharge_count),
-                f"{outgoing_usage:,.2f}",
-                f"{incoming_usage:,.2f}",
-            ],
-        }
+    st.subheader("🚨 Retention Action Queue")
+
+    st.write(
+        "Use the filters below to identify customers requiring a specific "
+        "retention review."
     )
 
+    f1, f2, f3 = st.columns(3)
+
+    with f1:
+        selected_priority = st.selectbox(
+            "Retention Priority",
+            ["All", "Priority 1", "Priority 2"]
+        )
+
+    with f2:
+        action_options = sorted(
+            priority_focus_df["candidate_action"]
+            .dropna()
+            .astype(str)
+            .unique()
+            .tolist()
+        )
+
+        selected_action = st.selectbox(
+            "Candidate Action",
+            ["All"] + action_options
+        )
+
+    with f3:
+        selected_value = st.selectbox(
+            "Customer Value",
+            ["All", "Lower", "Moderate", "Higher", "Highest"]
+        )
+
+    action_queue_df = priority_focus_df.copy()
+
+    if selected_priority != "All":
+        action_queue_df = action_queue_df[
+            action_queue_df["retention_priority"]
+            == selected_priority
+        ]
+
+    if selected_action != "All":
+        action_queue_df = action_queue_df[
+            action_queue_df["candidate_action"]
+            == selected_action
+        ]
+
+    if selected_value != "All":
+        action_queue_df = action_queue_df[
+            action_queue_df["value_tier"]
+            == selected_value
+        ]
+
+    # Highest-risk customers appear first within the selected queue.
+    action_queue_df = action_queue_df.sort_values(
+        "predicted_churn_risk",
+        ascending=False
+    )
+
+    st.write(
+        f"**{len(action_queue_df):,} customers** match the current "
+        "retention-review filters."
+    )
+
+    queue_columns = [
+        "id",
+        "predicted_churn_risk",
+        "behavioral_state",
+        "value_tier",
+        "retention_priority",
+        "candidate_action",
+    ]
+
+    queue_columns = [
+        col
+        for col in queue_columns
+        if col in action_queue_df.columns
+    ]
+
+    queue_display_df = action_queue_df[
+        queue_columns
+    ].copy()
+
+    if "predicted_churn_risk" in queue_display_df.columns:
+        queue_display_df["predicted_churn_risk"] = (
+            queue_display_df["predicted_churn_risk"]
+            .apply(format_probability)
+        )
+
     st.dataframe(
-        summary_df,
+        queue_display_df,
         width="stretch",
         hide_index=True,
     )
 
-    if st.button(
-        "➕ Add Customer",
-        width="stretch"
-    ):
+    # Allow the operational queue to be exported.
+    if not action_queue_df.empty:
 
-        if not new_customer_id.strip():
+        action_queue_csv = action_queue_df.to_csv(
+            index=False
+        )
 
-            st.warning(
-                "Please enter a Customer ID."
-            )
+        st.download_button(
+            "⬇️ Download Retention Action Queue",
+            data=action_queue_csv,
+            file_name="retention_action_queue.csv",
+            mime="text/csv",
+        )
 
-        else:
+    st.divider()
 
-            st.success(
-                f"Customer {new_customer_id} information captured."
-            )
+    # ========================================================
+    # 3. RETENTION WORKLOAD
+    # ========================================================
 
-            st.warning(
-                "⚠️ ML churn prediction was not generated because "
-                "the model requires the exact 189-feature prepared "
-                "input vector used during training."
-            )
+    st.subheader("📊 Retention Workload")
 
-            st.info(
-                "To enable genuine prediction for new customers, "
-                "the original model preprocessing pipeline must be "
-                "connected to this form."
-            )
+    st.write(
+        "Shows the types of retention reviews currently represented "
+        "within the Priority 1 + Priority 2 population."
+    )
 
+    workload_df = (
+        priority_focus_df["candidate_action"]
+        .value_counts()
+        .rename_axis("candidate_action")
+        .reset_index(name="customers")
+    )
+
+    if not workload_df.empty:
+
+        st.bar_chart(
+            workload_df.set_index("candidate_action")["customers"],
+            horizontal=True,
+        )
+
+    st.caption(
+        "Candidate actions are review categories generated by the "
+        "retention-intelligence layer. They are not proven causal treatments."
+    )
+
+    st.divider()
+
+    # ========================================================
+    # 4. PRIORITY CUSTOMER ARPU EXPOSURE
+    # ========================================================
+
+    st.subheader("💰 Priority Customer ARPU Exposure")
+
+    p1_arpu = priority_1_df["arpu_8"].sum()
+    p2_arpu = priority_2_df["arpu_8"].sum()
+
+    a1, a2 = st.columns(2)
+
+    with a1:
+        display_metric_card(
+            "Priority 1 Month-8 ARPU Exposure",
+            f"₹{p1_arpu:,.0f}"
+        )
+
+    with a2:
+        display_metric_card(
+            "Priority 2 Month-8 ARPU Exposure",
+            f"₹{p2_arpu:,.0f}"
+        )
+
+    st.caption(
+        "ARPU exposure represents observed Month-8 ARPU within the "
+        "priority population. It is not an estimate of revenue loss, "
+        "profit, customer lifetime value, or revenue saved."
+    )
+
+    st.divider()
+
+    # ========================================================
+    # 5. RETENTION OPERATIONS PLAYBOOK
+    # ========================================================
+
+    st.subheader("🧭 Retention Operations Playbook")
+
+    st.markdown(
+        """
+### From prediction to action
+
+**1. Identify risk**
+- Use the ML-predicted churn probability to identify customers with elevated risk.
+
+**2. Check retention priority**
+- Priority 1 and Priority 2 customers form the current operational focus.
+
+**3. Understand the behavioural evidence**
+- Review recent, persistent and coordinated deterioration patterns.
+
+**4. Review the candidate action**
+- Use the candidate action as the recommended *review category*.
+
+**5. Human retention review**
+- The retention team investigates the customer context before deciding on an intervention.
+
+### Priority interpretation
+
+| Priority | Operational meaning |
+|---|---|
+| **Priority 1** | Very-high-risk customers with higher or highest customer value |
+| **Priority 2** | Very-high-risk customers with lower/moderate value but strong behavioural deterioration |
+| **Priority 3** | Outside the current focused retention queue |
+"""
+    )
+
+    st.divider()
+
+    # ========================================================
+    # 6. OPERATIONAL READINESS
+    # ========================================================
+
+    st.subheader("⚙️ Operational Readiness")
+
+    r1, r2 = st.columns(2)
+
+    with r1:
+
+        st.markdown(
+            """
+### Current Prototype
+
+**Data mode:** Batch-based
+
+The current application operates on the prepared
+retention-intelligence dataset.
+
+**Decision flow:**
+
+`Prepared Data → Churn Risk → Retention Intelligence → Action Queue`
+"""
+        )
+
+    with r2:
+
+        st.markdown(
+            """
+### Production Direction
+
+The same architecture can be connected to:
+
+- scheduled customer-data refreshes,
+- CRM/customer-service systems,
+- event-driven feature updates,
+- periodic model scoring,
+- refreshed retention queues.
+
+`Customer Events → Feature Refresh → Model → Retention Queue`
+"""
+        )
+
+    st.warning(
+        "The current prototype is not a real-time intervention system. "
+        "Production deployment would require scheduled or event-driven "
+        "data and model refresh mechanisms."
+    )
+
+    # ========================================================
+    # FINAL BUSINESS MESSAGE
+    # ========================================================
+
+    st.success(
+        "Business flow: Predict churn → understand deterioration → "
+        "prioritize customers → route the retention review → support human action."
+    )
 
 # ============================================================
 # FOOTER
