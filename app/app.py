@@ -66,11 +66,6 @@ except Exception as e:
 
 # ============================================================
 # CUSTOM CSS
-#
-# IMPORTANT:
-# We use CSS only for styling.
-# We DO NOT use HTML div cards for the UI.
-# This avoids the HTML rendering problem you were seeing.
 # ============================================================
 
 st.markdown(
@@ -179,7 +174,7 @@ st.markdown(
 
 
     /* --------------------------------------------------------
-       INFO BOXES
+       INFO BOX
     -------------------------------------------------------- */
 
     .info-text {
@@ -203,7 +198,7 @@ st.markdown(
 def clean_value(value):
     """
     Convert NumPy/Pandas values into normal Python values
-    so Streamlit never displays things like np.int64(3).
+    so Streamlit displays clean values.
     """
 
     if pd.isna(value):
@@ -219,31 +214,38 @@ def clean_value(value):
 
 
 def safe_int(value, default=0):
+    """Safely convert a value to integer."""
+
     try:
         if pd.isna(value):
             return default
+
         return int(float(value))
+
     except Exception:
         return default
 
 
 def safe_float(value, default=0.0):
+    """Safely convert a value to float."""
+
     try:
         if pd.isna(value):
             return default
+
         return float(value)
+
     except Exception:
         return default
 
 
 def format_probability(value):
     """
-    Convert probability into percentage.
+    Convert a probability value into a readable percentage.
     """
 
     value = safe_float(value)
 
-    # Handle values already represented as percentages
     if value > 1:
         return f"{value:.2f}%"
 
@@ -251,6 +253,8 @@ def format_probability(value):
 
 
 def risk_color(risk):
+    """Return a simple visual indicator for risk tier."""
+
     risk = str(risk).lower()
 
     if "very high" in risk:
@@ -262,17 +266,14 @@ def risk_color(risk):
     if "moderate" in risk:
         return "🟡"
 
-    if "low" in risk:
+    if risk == "low":
         return "🟢"
 
     return "⚪"
 
 
 def display_page_title(title, description=None):
-    """
-    Native Streamlit title.
-    No custom HTML.
-    """
+    """Display a consistent page title."""
 
     st.title(title)
 
@@ -281,18 +282,15 @@ def display_page_title(title, description=None):
 
 
 def display_info_box(title, message):
-    """
-    Use Streamlit's native info component.
-    """
+    """Display a native Streamlit information box."""
 
-    st.info(f"**{title}**\n\n{message}")
+    st.info(
+        f"**{title}**\n\n{message}"
+    )
 
 
 def display_profile_card(customer):
-    """
-    Display customer information using native Streamlit
-    columns instead of HTML.
-    """
+    """Display customer-level summary information."""
 
     st.subheader("👤 Customer Profile")
 
@@ -301,21 +299,31 @@ def display_profile_card(customer):
     with c1:
         st.metric(
             "Customer ID",
-            str(clean_value(customer.get("id", "-")))
+            str(
+                clean_value(
+                    customer.get("id", "-")
+                )
+            )
         )
 
     with c2:
         st.metric(
             "Churn Risk",
             format_probability(
-                customer.get("predicted_churn_risk", 0)
+                customer.get(
+                    "predicted_churn_risk",
+                    0
+                )
             )
         )
 
     with c3:
         risk = str(
             clean_value(
-                customer.get("risk_tier", "-")
+                customer.get(
+                    "risk_tier",
+                    "-"
+                )
             )
         )
 
@@ -327,7 +335,10 @@ def display_profile_card(customer):
     with c4:
         value_tier = str(
             clean_value(
-                customer.get("value_tier", "-")
+                customer.get(
+                    "value_tier",
+                    "-"
+                )
             )
         )
 
@@ -338,9 +349,7 @@ def display_profile_card(customer):
 
 
 def display_metric_card(label, value, help_text=None):
-    """
-    Native Streamlit metric.
-    """
+    """Display a consistent native Streamlit metric."""
 
     st.metric(
         label=label,
@@ -355,12 +364,11 @@ def display_metric_card(label, value, help_text=None):
 
 @st.cache_data
 def load_data(path):
+
     if not os.path.exists(path):
         return None
 
-    df = pd.read_csv(path)
-
-    return df
+    return pd.read_csv(path)
 
 
 df = load_data(DATA_PATH)
@@ -400,12 +408,11 @@ required_columns = [
     "risk_tier",
 ]
 
-
 missing_columns = [
-    col for col in required_columns
+    col
+    for col in required_columns
     if col not in df.columns
 ]
-
 
 if missing_columns:
 
@@ -428,7 +435,6 @@ df["predicted_churn_risk"] = pd.to_numeric(
 ).fillna(0)
 
 
-# Make sure risk tier is readable
 df["risk_tier"] = (
     df["risk_tier"]
     .astype(str)
@@ -444,7 +450,9 @@ with st.sidebar:
 
     st.title("📡 Telecom AI")
 
-    st.caption("Churn Intelligence System")
+    st.caption(
+        "Churn Intelligence System"
+    )
 
     st.divider()
 
@@ -489,10 +497,13 @@ with st.sidebar:
     )
 
     if behavioral_available:
+
         st.success(
             "Behavioral intelligence available"
         )
+
     else:
+
         st.warning(
             "Behavioral intelligence unavailable"
         )
@@ -505,10 +516,12 @@ with st.sidebar:
 
 
 # ============================================================
-# HEADER
+# APPLICATION HEADER
 # ============================================================
 
-st.title("📡 Telecom Customer Churn Intelligence")
+st.title(
+    "📡 Telecom Customer Churn Intelligence"
+)
 
 st.write(
     "AI-powered customer churn analysis, "
@@ -531,9 +544,9 @@ if page == "📊 Executive Dashboard":
         "Overview of customer churn risk, value and retention priorities."
     )
 
-    # --------------------------------------------------------
+    # ========================================================
     # MAIN METRICS
-    # --------------------------------------------------------
+    # ========================================================
 
     total_customers = len(df)
 
@@ -541,14 +554,40 @@ if page == "📊 Executive Dashboard":
         df["risk_tier"]
         .astype(str)
         .str.lower()
-        .isin(["high", "very high"])
+        .isin(
+            [
+                "high",
+                "very high"
+            ]
+        )
         .sum()
     )
-    priority_1_count = int(
-        (df["retention_priority"] == "Priority 1").sum())
-    priority_2_count = int(
-        (df["retention_priority"] == "Priority 2").sum())
-    retention_priority_count = priority_1_count + priority_2_count
+
+    if "retention_priority" in df.columns:
+
+        priority_1_count = int(
+            (
+                df["retention_priority"]
+                == "Priority 1"
+            ).sum()
+        )
+
+        priority_2_count = int(
+            (
+                df["retention_priority"]
+                == "Priority 2"
+            ).sum()
+        )
+
+    else:
+
+        priority_1_count = 0
+        priority_2_count = 0
+
+    retention_priority_count = (
+        priority_1_count
+        + priority_2_count
+    )
 
     average_churn_risk = (
         df["predicted_churn_risk"].mean()
@@ -557,18 +596,21 @@ if page == "📊 Executive Dashboard":
     m1, m2, m3, m4 = st.columns(4)
 
     with m1:
+
         display_metric_card(
             "Total Customers",
             f"{total_customers:,}"
         )
 
     with m2:
+
         display_metric_card(
             "High-Risk Customers",
             f"{high_risk_count:,}"
         )
 
     with m3:
+
         display_metric_card(
             "Priority 1 + 2 Customers",
             f"{retention_priority_count:,}",
@@ -576,16 +618,20 @@ if page == "📊 Executive Dashboard":
         )
 
     with m4:
+
         display_metric_card(
             "Average Churn Risk",
-            format_probability(average_churn_risk)
+            format_probability(
+                average_churn_risk
+            )
         )
 
     st.divider()
 
-    # --------------------------------------------------------
+
+    # ========================================================
     # RISK OVERVIEW
-    # --------------------------------------------------------
+    # ========================================================
 
     st.subheader("Risk Overview")
 
@@ -596,34 +642,114 @@ if page == "📊 Executive Dashboard":
         "Very High",
     ]
 
-    risk_counts = (
-        df["risk_tier"]
-        .value_counts()
-        .reindex(risk_order)
-        .fillna(0)
-        .reset_index()
-    )
+    if "churn_probability" in df.columns:
 
-    risk_counts.columns = [
-        "Risk Tier",
-        "Customers"
-    ]
+        risk_summary = (
+            df.groupby(
+                "risk_tier",
+                observed=False
+            )
+            .agg(
+                Customers=("id", "count"),
+                Actual_Churn_Rate=(
+                    "churn_probability",
+                    "mean"
+                )
+            )
+            .reindex(risk_order)
+            .fillna(0)
+            .reset_index()
+        )
+
+        risk_summary[
+            "Actual_Churn_Rate"
+        ] *= 100
+
+        risk_summary.columns = [
+            "Risk Tier",
+            "Customers",
+            "Actual Churn Rate",
+        ]
+
+    else:
+
+        risk_summary = (
+            df["risk_tier"]
+            .value_counts()
+            .reindex(risk_order)
+            .fillna(0)
+            .reset_index()
+        )
+
+        risk_summary.columns = [
+            "Risk Tier",
+            "Customers",
+        ]
+
 
     c1, c2 = st.columns(2)
 
+
+    # --------------------------------------------------------
+    # ACTUAL CHURN RATE
+    # --------------------------------------------------------
+
     with c1:
 
-        fig_risk = px.bar(
-            risk_counts,
-            x="Risk Tier",
-            y="Customers",
-            title="Customers by Risk Tier",
-        )
+        if "Actual Churn Rate" in risk_summary.columns:
+
+            fig_risk = px.bar(
+                risk_summary,
+                x="Risk Tier",
+                y="Actual Churn Rate",
+                title="Actual Churn Rate by Risk Tier",
+                text="Actual Churn Rate",
+            )
+
+            fig_risk.update_traces(
+                texttemplate="%{text:.1f}%",
+                textposition="outside",
+                cliponaxis=False,
+            )
+
+            fig_risk.update_yaxes(
+                title="Actual Churn Rate (%)",
+                rangemode="tozero",
+                ticksuffix="%",
+            )
+
+        else:
+
+            fig_risk = px.bar(
+                risk_summary,
+                x="Risk Tier",
+                y="Customers",
+                title="Customers by Risk Tier",
+                text="Customers",
+            )
+
+            fig_risk.update_traces(
+                textposition="outside",
+                cliponaxis=False,
+            )
+
+            fig_risk.update_yaxes(
+                title="Customers",
+                rangemode="tozero",
+                tickformat=",",
+            )
 
         fig_risk.update_layout(
             showlegend=False,
             plot_bgcolor="white",
             paper_bgcolor="white",
+            height=420,
+            margin=dict(
+                t=70,
+                b=40,
+                l=50,
+                r=20,
+            ),
         )
 
         st.plotly_chart(
@@ -631,17 +757,40 @@ if page == "📊 Executive Dashboard":
             width="stretch"
         )
 
+
+    # --------------------------------------------------------
+    # RISK DISTRIBUTION
+    # --------------------------------------------------------
+
     with c2:
 
         fig_pie = px.pie(
-            risk_counts,
+            risk_summary,
             names="Risk Tier",
             values="Customers",
             title="Risk Distribution",
+            hole=0.38,
+        )
+
+        fig_pie.update_traces(
+            textinfo="percent+label",
+            hovertemplate=(
+                "<b>%{label}</b><br>"
+                "Customers: %{value:,}<br>"
+                "Share: %{percent}"
+                "<extra></extra>"
+            ),
         )
 
         fig_pie.update_layout(
-            paper_bgcolor="white"
+            paper_bgcolor="white",
+            height=420,
+            margin=dict(
+                t=70,
+                b=30,
+                l=20,
+                r=20,
+            ),
         )
 
         st.plotly_chart(
@@ -649,48 +798,156 @@ if page == "📊 Executive Dashboard":
             width="stretch"
         )
 
-    # --------------------------------------------------------
+
+    st.caption(
+        "Risk tiers are relative quartile-based segments. "
+        "The churn-rate view shows whether higher-risk segments "
+        "actually contain a greater concentration of observed churn."
+    )
+
+    st.divider()
+
+
+    # ========================================================
     # CUSTOMER VALUE
-    # --------------------------------------------------------
+    # ========================================================
 
     st.subheader("Customer Value")
 
     if "value_tier" in df.columns:
 
-        value_counts = (
-            df["value_tier"]
-            .astype(str)
-            .value_counts()
-            .reset_index()
-        )
-
-        value_counts.columns = [
-            "Value Tier",
-            "Customers"
+        value_order = [
+            "Lower",
+            "Moderate",
+            "Higher",
+            "Highest",
         ]
 
-        fig_value = px.bar(
-            value_counts,
-            x="Value Tier",
-            y="Customers",
-            title="Customers by Value Tier",
-        )
+        # ----------------------------------------------------
+        # IMPORTANT:
+        # Value tiers were created using relative quartiles.
+        # Therefore customer counts are intentionally similar.
+        #
+        # Instead of showing another nearly-equal bar chart,
+        # show total Month-8 ARPU exposure by value tier.
+        # ----------------------------------------------------
 
-        fig_value.update_layout(
-            showlegend=False,
-            plot_bgcolor="white",
-            paper_bgcolor="white",
-        )
+        if "arpu_8" in df.columns:
 
-        st.plotly_chart(
-            fig_value,
-            width="stretch"
-        )
+            value_summary = (
+                df.groupby(
+                    "value_tier",
+                    observed=False
+                )
+                .agg(
+                    Customers=("id", "count"),
+                    ARPU_Exposure=("arpu_8", "sum"),
+                    Average_ARPU=("arpu_8", "mean"),
+                )
+                .reindex(value_order)
+                .fillna(0)
+                .reset_index()
+            )
+
+            value_summary.columns = [
+                "Value Tier",
+                "Customers",
+                "ARPU Exposure",
+                "Average ARPU",
+            ]
+
+            fig_value = px.bar(
+                value_summary,
+                x="Value Tier",
+                y="ARPU Exposure",
+                title="Observed Month-8 ARPU Exposure by Value Tier",
+                text="ARPU Exposure",
+            )
+
+            fig_value.update_traces(
+                texttemplate="₹%{text:,.0f}",
+                textposition="outside",
+                cliponaxis=False,
+            )
+
+            fig_value.update_yaxes(
+                title="Observed Month-8 ARPU Exposure",
+                rangemode="tozero",
+                tickprefix="₹",
+                tickformat=",",
+            )
+
+            fig_value.update_layout(
+                showlegend=False,
+                plot_bgcolor="white",
+                paper_bgcolor="white",
+                height=420,
+                margin=dict(
+                    t=70,
+                    b=40,
+                    l=60,
+                    r=20,
+                ),
+            )
+
+            st.plotly_chart(
+                fig_value,
+                width="stretch"
+            )
+
+            st.caption(
+                "Value tiers are relative customer-value segments. "
+                "The chart shows observed Month-8 ARPU exposure, "
+                "not profit, CLV or estimated revenue loss."
+            )
+
+        else:
+
+            value_counts = (
+                df["value_tier"]
+                .astype(str)
+                .value_counts()
+                .reindex(value_order)
+                .fillna(0)
+                .astype(int)
+                .reset_index()
+            )
+
+            value_counts.columns = [
+                "Value Tier",
+                "Customers",
+            ]
+
+            fig_value = px.bar(
+                value_counts,
+                x="Value Tier",
+                y="Customers",
+                title="Customers by Value Tier",
+                text="Customers",
+            )
+
+            fig_value.update_traces(
+                textposition="outside",
+                cliponaxis=False,
+            )
+
+            fig_value.update_layout(
+                showlegend=False,
+                plot_bgcolor="white",
+                paper_bgcolor="white",
+                height=420,
+            )
+
+            st.plotly_chart(
+                fig_value,
+                width="stretch"
+            )
 
     else:
 
         st.info(
-            "Value-tier information is not available in the processed dataset."
+            "Value-tier information is not available "
+            "in the processed dataset."
         )
 
 
@@ -711,7 +968,9 @@ elif page == "👤 Customer Analysis":
     selected_id = st.selectbox(
         "Select Customer",
         customer_ids,
-        format_func=lambda x: str(clean_value(x)),
+        format_func=lambda x: str(
+            clean_value(x)
+        ),
     )
 
     selected_rows = df[
@@ -726,17 +985,26 @@ elif page == "👤 Customer Analysis":
 
         st.stop()
 
-    customer = selected_rows.iloc[0].to_dict()
+    customer = (
+        selected_rows
+        .iloc[0]
+        .to_dict()
+    )
 
-    display_profile_card(customer)
+    display_profile_card(
+        customer
+    )
 
     st.divider()
 
-    # --------------------------------------------------------
-    # BEHAVIORAL STATE
-    # --------------------------------------------------------
 
-    st.subheader("🧠 Behavioral Intelligence")
+    # ========================================================
+    # BEHAVIORAL STATE
+    # ========================================================
+
+    st.subheader(
+        "🧠 Behavioral Intelligence"
+    )
 
     behavioral_state = customer.get(
         "behavioral_state",
@@ -761,6 +1029,7 @@ elif page == "👤 Customer Analysis":
     b1, b2, b3 = st.columns(3)
 
     with b1:
+
         display_metric_card(
             "Recent Deterioration",
             safe_int(
@@ -772,6 +1041,7 @@ elif page == "👤 Customer Analysis":
         )
 
     with b2:
+
         display_metric_card(
             "Persistent Deterioration",
             safe_int(
@@ -783,6 +1053,7 @@ elif page == "👤 Customer Analysis":
         )
 
     with b3:
+
         display_metric_card(
             "Coordinated Deterioration",
             safe_int(
@@ -795,11 +1066,14 @@ elif page == "👤 Customer Analysis":
 
     st.divider()
 
-    # --------------------------------------------------------
-    # FINANCIAL / USAGE INFORMATION
-    # --------------------------------------------------------
 
-    st.subheader("📈 Customer Indicators")
+    # ========================================================
+    # CUSTOMER INDICATORS
+    # ========================================================
+
+    st.subheader(
+        "📈 Customer Indicators"
+    )
 
     indicator_columns = [
         "arpu_8",
@@ -810,25 +1084,41 @@ elif page == "👤 Customer Analysis":
     ]
 
     available_indicators = [
-        col for col in indicator_columns
+        col
+        for col in indicator_columns
         if col in df.columns
     ]
 
     if available_indicators:
 
         cols = st.columns(
-            min(len(available_indicators), 5)
+            min(
+                len(available_indicators),
+                5
+            )
         )
 
-        for i, col in enumerate(available_indicators):
+        for i, col in enumerate(
+            available_indicators
+        ):
 
-            value = customer.get(col)
+            value = customer.get(
+                col
+            )
 
-            with cols[i % len(cols)]:
+            with cols[
+                i % len(cols)
+            ]:
 
                 display_metric_card(
-                    col.replace("_8", "")
-                    .replace("_", " ")
+                    col.replace(
+                        "_8",
+                        ""
+                    )
+                    .replace(
+                        "_",
+                        " "
+                    )
                     .title(),
                     f"{safe_float(value):,.2f}"
                 )
@@ -836,16 +1126,20 @@ elif page == "👤 Customer Analysis":
     else:
 
         st.info(
-            "Customer indicator fields are not available."
+            "Customer indicator fields are not available "
+            "in the retention-intelligence dataset."
         )
 
-    # --------------------------------------------------------
-    # DECISION SUPPORT
-    # --------------------------------------------------------
+
+    # ========================================================
+    # RETENTION DECISION
+    # ========================================================
 
     st.divider()
 
-    st.subheader("🎯 Retention Decision")
+    st.subheader(
+        "🎯 Retention Decision"
+    )
 
     retention_priority = customer.get(
         "retention_priority",
@@ -885,44 +1179,26 @@ elif page == "👤 Customer Analysis":
 
 elif page == "🚨 High-Risk Customers":
 
-    # --------------------------------------------------------
-    # PAGE HEADER
-    # --------------------------------------------------------
-
     display_page_title(
         "🚨 High-Risk Customers",
         "Customers ranked by predicted churn probability."
     )
 
     # --------------------------------------------------------
-    # HIGH-RISK CUSTOMER FILTER
-    #
-    # This view focuses on customers classified as High or
-    # Very High according to the ML-derived risk tier.
-    #
-    # Important distinction:
-    # Risk ranking answers:
-    # "Who is most likely to churn?"
-    #
-    # Retention priority answers:
-    # "Who should the business prioritize?"
-    #
-    # These are intentionally kept as separate concepts.
+    # FILTER HIGH-RISK CUSTOMERS
     # --------------------------------------------------------
 
     high_risk_df = df[
         df["risk_tier"]
         .astype(str)
         .str.lower()
-        .isin(["high", "very high"])
+        .isin(
+            [
+                "high",
+                "very high"
+            ]
+        )
     ].copy()
-
-    # --------------------------------------------------------
-    # EMPTY-STATE HANDLING
-    #
-    # Prevent downstream operations such as iloc[0] when
-    # no customers satisfy the selected risk criteria.
-    # --------------------------------------------------------
 
     if high_risk_df.empty:
 
@@ -933,46 +1209,33 @@ elif page == "🚨 High-Risk Customers":
     else:
 
         st.write(
-            f"**{len(high_risk_df):,} customers in the "
-            f"High / Very High risk tiers.**"
+            f"**{len(high_risk_df):,} customers "
+            f"in the High / Very High risk tiers.**"
         )
-
-        # ----------------------------------------------------
-        # RISK INTERPRETATION
-        #
-        # The customer ranking on this page is based entirely
-        # on the ML predicted churn probability.
-        #
-        # Retention priority is calculated separately using
-        # risk, customer value and behavioural evidence.
-        # ----------------------------------------------------
 
         st.info(
-            "This view ranks customers by ML-predicted churn "
-            "probability. Retention Priority is a separate "
-            "business decision that also considers customer "
-            "value and behavioural evidence."
+            "This view ranks customers by ML-predicted "
+            "churn probability. Retention Priority is a "
+            "separate business decision that also considers "
+            "customer value and behavioural evidence."
         )
 
         # ----------------------------------------------------
-        # SORT BY ML CHURN RISK
-        #
-        # Highest predicted churn probability appears first.
+        # SORT BY ML RISK
         # ----------------------------------------------------
 
-        high_risk_df = high_risk_df.sort_values(
-            "predicted_churn_risk",
-            ascending=False
+        high_risk_df = (
+            high_risk_df
+            .sort_values(
+                "predicted_churn_risk",
+                ascending=False
+            )
         )
 
-        # ----------------------------------------------------
-        # TOP CUSTOMER METRICS
-        #
-        # These metrics provide a quick summary of the highest
-        # churn-risk customer and the size of the risk population.
-        # ----------------------------------------------------
-
-        top_risk = high_risk_df.iloc[0]
+        top_risk = (
+            high_risk_df
+            .iloc[0]
+        )
 
         m1, m2, m3 = st.columns(3)
 
@@ -992,7 +1255,9 @@ elif page == "🚨 High-Risk Customers":
             display_metric_card(
                 "Highest Churn Risk",
                 format_probability(
-                    top_risk["predicted_churn_risk"]
+                    top_risk[
+                        "predicted_churn_risk"
+                    ]
                 )
             )
 
@@ -1005,16 +1270,10 @@ elif page == "🚨 High-Risk Customers":
 
         st.divider()
 
-        # ----------------------------------------------------
+
+        # ====================================================
         # CUSTOMER RISK TABLE
-        #
-        # ML risk is shown together with behavioural state,
-        # customer value and retention priority.
-        #
-        # This allows the user to understand why a high-risk
-        # customer may still receive a different retention
-        # priority.
-        # ----------------------------------------------------
+        # ====================================================
 
         st.subheader(
             "Customers Ranked by Churn Probability"
@@ -1030,31 +1289,30 @@ elif page == "🚨 High-Risk Customers":
             "candidate_action",
         ]
 
-        # Keep only columns that are available in the processed
-        # retention-intelligence dataset.
         display_columns = [
             col
             for col in display_columns
             if col in high_risk_df.columns
         ]
 
-        table_df = high_risk_df[
-            display_columns
-        ].copy()
-
-        # ----------------------------------------------------
-        # DISPLAY-ONLY RISK FORMATTING
-        #
-        # The original dataframe retains numeric probabilities.
-        # Formatting is applied only to the table copy so that
-        # the underlying data remains suitable for calculations.
-        # ----------------------------------------------------
+        table_df = (
+            high_risk_df[
+                display_columns
+            ]
+            .copy()
+        )
 
         if "predicted_churn_risk" in table_df.columns:
 
-            table_df["predicted_churn_risk"] = (
-                table_df["predicted_churn_risk"]
-                .apply(format_probability)
+            table_df[
+                "predicted_churn_risk"
+            ] = (
+                table_df[
+                    "predicted_churn_risk"
+                ]
+                .apply(
+                    format_probability
+                )
             )
 
         st.dataframe(
@@ -1063,16 +1321,16 @@ elif page == "🚨 High-Risk Customers":
             hide_index=True,
         )
 
-        # ----------------------------------------------------
-        # DOWNLOAD
-        #
-        # The downloadable file retains the original numeric
-        # churn-risk values rather than the display-formatted
-        # percentages.
-        # ----------------------------------------------------
 
-        csv_data = high_risk_df.to_csv(
-            index=False
+        # ====================================================
+        # DOWNLOAD
+        # ====================================================
+
+        csv_data = (
+            high_risk_df
+            .to_csv(
+                index=False
+            )
         )
 
         st.download_button(
@@ -1081,28 +1339,14 @@ elif page == "🚨 High-Risk Customers":
             file_name="high_risk_customers.csv",
             mime="text/csv",
         )
+
+
 # ============================================================
 # PAGE 4
 # RETENTION INTELLIGENCE
 # ============================================================
 
 elif page == "🧠 Retention Intelligence":
-
-    # --------------------------------------------------------
-    # PAGE HEADER
-    # --------------------------------------------------------
-    #
-    # This page represents the business decision-support layer.
-    #
-    # The ML model answers:
-    #   "How likely is the customer to churn?"
-    #
-    # This layer adds:
-    #   Behaviour + Value + Business Priority + Candidate Action
-    #
-    # The objective is therefore to move from prediction toward
-    # actionable retention prioritization.
-    # --------------------------------------------------------
 
     display_page_title(
         "🧠 Retention Intelligence",
@@ -1111,17 +1355,7 @@ elif page == "🧠 Retention Intelligence":
     )
 
     # --------------------------------------------------------
-    # RISK-TIER INTERPRETATION
-    # --------------------------------------------------------
-    #
-    # Risk tiers are relative quartile-based segments created
-    # from predicted churn probabilities.
-    #
-    # Therefore:
-    #   Very High ≠ churn probability above 50%
-    #
-    # It means the customer belongs to the highest-risk quartile
-    # within the scored customer population.
+    # RISK INTERPRETATION
     # --------------------------------------------------------
 
     st.info(
@@ -1131,12 +1365,10 @@ elif page == "🧠 Retention Intelligence":
         "churn probability above 50%."
     )
 
-    # --------------------------------------------------------
+
+    # ========================================================
     # PORTFOLIO OVERVIEW
-    # --------------------------------------------------------
-    #
-    # Provides a quick view of the retention population.
-    # --------------------------------------------------------
+    # ========================================================
 
     st.subheader(
         "Retention Portfolio Overview"
@@ -1146,24 +1378,34 @@ elif page == "🧠 Retention Intelligence":
 
     very_high_count = int(
         (
-            df["risk_tier"].astype(str)
+            df["risk_tier"]
+            .astype(str)
             == "Very High"
         ).sum()
     )
 
-    priority_1_count = int(
-        (
-            df["retention_priority"].astype(str)
-            == "Priority 1"
-        ).sum()
-    )
+    if "retention_priority" in df.columns:
 
-    priority_2_count = int(
-        (
-            df["retention_priority"].astype(str)
-            == "Priority 2"
-        ).sum()
-    )
+        priority_1_count = int(
+            (
+                df["retention_priority"]
+                .astype(str)
+                == "Priority 1"
+            ).sum()
+        )
+
+        priority_2_count = int(
+            (
+                df["retention_priority"]
+                .astype(str)
+                == "Priority 2"
+            ).sum()
+        )
+
+    else:
+
+        priority_1_count = 0
+        priority_2_count = 0
 
     c1, c2, c3, c4 = st.columns(4)
 
@@ -1197,16 +1439,10 @@ elif page == "🧠 Retention Intelligence":
 
     st.divider()
 
-    # --------------------------------------------------------
+
+    # ========================================================
     # BEHAVIOURAL STATES
-    # --------------------------------------------------------
-    #
-    # Behavioural states summarize observable deterioration
-    # patterns across the available monthly observations.
-    #
-    # They are descriptive analytical categories and should not
-    # be interpreted as causal explanations of churn.
-    # --------------------------------------------------------
+    # ========================================================
 
     if "behavioral_state" in df.columns:
 
@@ -1223,7 +1459,7 @@ elif page == "🧠 Retention Intelligence":
 
         behavioral_counts.columns = [
             "Behavioural State",
-            "Customers"
+            "Customers",
         ]
 
         fig_behavior = px.bar(
@@ -1231,13 +1467,26 @@ elif page == "🧠 Retention Intelligence":
             x="Customers",
             y="Behavioural State",
             orientation="h",
-            title="Customer Distribution by Behavioural State"
+            title="Customer Distribution by Behavioural State",
+            text="Customers",
+        )
+
+        fig_behavior.update_traces(
+            textposition="outside",
+            cliponaxis=False,
         )
 
         fig_behavior.update_layout(
             showlegend=False,
             plot_bgcolor="white",
-            paper_bgcolor="white"
+            paper_bgcolor="white",
+            height=450,
+            margin=dict(
+                t=70,
+                b=40,
+                l=50,
+                r=70,
+            ),
         )
 
         st.plotly_chart(
@@ -1252,17 +1501,10 @@ elif page == "🧠 Retention Intelligence":
 
     st.divider()
 
-    # --------------------------------------------------------
+
+    # ========================================================
     # DETERIORATION SIGNALS
-    # --------------------------------------------------------
-    #
-    # These metrics show the number of customers exhibiting
-    # deterioration across multiple behavioural dimensions.
-    #
-    # A threshold of >= 2 is used here to focus the dashboard
-    # on customers showing deterioration across more than one
-    # behavioural dimension rather than a single isolated signal.
-    # --------------------------------------------------------
+    # ========================================================
 
     st.subheader(
         "Customer Deterioration Signals"
@@ -1275,12 +1517,16 @@ elif page == "🧠 Retention Intelligence":
         if "recent_deterioration_count" in df.columns:
 
             recent_values = pd.to_numeric(
-                df["recent_deterioration_count"],
+                df[
+                    "recent_deterioration_count"
+                ],
                 errors="coerce"
             )
 
             count = int(
-                (recent_values >= 2).sum()
+                (
+                    recent_values >= 2
+                ).sum()
             )
 
         else:
@@ -1297,12 +1543,16 @@ elif page == "🧠 Retention Intelligence":
         if "persistent_deterioration_count" in df.columns:
 
             persistent_values = pd.to_numeric(
-                df["persistent_deterioration_count"],
+                df[
+                    "persistent_deterioration_count"
+                ],
                 errors="coerce"
             )
 
             count = int(
-                (persistent_values >= 2).sum()
+                (
+                    persistent_values >= 2
+                ).sum()
             )
 
         else:
@@ -1319,12 +1569,16 @@ elif page == "🧠 Retention Intelligence":
         if "coordinated_deterioration_count" in df.columns:
 
             coordinated_values = pd.to_numeric(
-                df["coordinated_deterioration_count"],
+                df[
+                    "coordinated_deterioration_count"
+                ],
                 errors="coerce"
             )
 
             count = int(
-                (coordinated_values >= 4).sum()
+                (
+                    coordinated_values >= 4
+                ).sum()
             )
 
         else:
@@ -1337,25 +1591,16 @@ elif page == "🧠 Retention Intelligence":
         )
 
     st.caption(
-        "Deterioration counts are based on the project's predefined "
-        "behavioural definitions."
+        "Deterioration counts are based on the project's "
+        "predefined behavioural definitions."
     )
 
     st.divider()
 
-    # --------------------------------------------------------
+
+    # ========================================================
     # RETENTION PRIORITY
-    # --------------------------------------------------------
-    #
-    # Retention priority is a business-rule layer.
-    #
-    # It is NOT simply the ranking of predicted churn probability.
-    #
-    # The project's priority logic considers:
-    #   - churn risk
-    #   - customer value
-    #   - behavioural evidence
-    # --------------------------------------------------------
+    # ========================================================
 
     if "retention_priority" in df.columns:
 
@@ -1371,29 +1616,36 @@ elif page == "🧠 Retention Intelligence":
                 [
                     "Priority 1",
                     "Priority 2",
-                    "Priority 3"
+                    "Priority 3",
                 ],
-                fill_value=0
+                fill_value=0,
             )
             .reset_index()
         )
 
         priority_counts.columns = [
             "Retention Priority",
-            "Customers"
+            "Customers",
         ]
 
         fig_priority = px.bar(
             priority_counts,
             x="Retention Priority",
             y="Customers",
-            title="Customer Distribution by Retention Priority"
+            title="Customer Distribution by Retention Priority",
+            text="Customers",
+        )
+
+        fig_priority.update_traces(
+            textposition="outside",
+            cliponaxis=False,
         )
 
         fig_priority.update_layout(
             showlegend=False,
             plot_bgcolor="white",
-            paper_bgcolor="white"
+            paper_bgcolor="white",
+            height=420,
         )
 
         st.plotly_chart(
@@ -1409,20 +1661,10 @@ elif page == "🧠 Retention Intelligence":
 
     st.divider()
 
-    # --------------------------------------------------------
+
+    # ========================================================
     # RISK × VALUE
-    # --------------------------------------------------------
-    #
-    # This view connects predicted churn risk with relative
-    # customer value.
-    #
-    # It helps explain why the customer with the highest churn
-    # probability is not necessarily the customer with the
-    # highest retention priority.
-    #
-    # Value tier is a relative value indicator. It should not be
-    # interpreted as CLV, profit or customer margin.
-    # --------------------------------------------------------
+    # ========================================================
 
     if (
         "risk_tier" in df.columns
@@ -1437,9 +1679,9 @@ elif page == "🧠 Retention Intelligence":
             df.groupby(
                 [
                     "risk_tier",
-                    "value_tier"
+                    "value_tier",
                 ],
-                observed=True
+                observed=True,
             )
             .size()
             .reset_index(
@@ -1447,54 +1689,55 @@ elif page == "🧠 Retention Intelligence":
             )
         )
 
-        risk_value_pivot = risk_value_df.pivot(
-            index="risk_tier",
-            columns="value_tier",
-            values="Customers"
-        ).fillna(0)
+        risk_value_pivot = (
+            risk_value_df
+            .pivot(
+                index="risk_tier",
+                columns="value_tier",
+                values="Customers",
+            )
+            .fillna(0)
+        )
 
         risk_order = [
             "Low",
             "Moderate",
             "High",
-            "Very High"
+            "Very High",
         ]
 
         value_order = [
             "Lower",
             "Moderate",
             "Higher",
-            "Highest"
+            "Highest",
         ]
 
-        risk_value_pivot = risk_value_pivot.reindex(
-            index=risk_order,
-            columns=value_order,
-            fill_value=0
+        risk_value_pivot = (
+            risk_value_pivot
+            .reindex(
+                index=risk_order,
+                columns=value_order,
+                fill_value=0,
+            )
         )
 
         st.dataframe(
             risk_value_pivot,
-            width="stretch"
+            width="stretch",
         )
 
         st.caption(
             "Risk and value are separate dimensions. Retention "
-            "priority uses these dimensions together with behavioural "
-            "evidence."
+            "priority uses these dimensions together with behavioural evidence."
         )
 
     st.divider()
 
-    # --------------------------------------------------------
+
+    # ========================================================
     # CANDIDATE RETENTION ACTIONS
-    # --------------------------------------------------------
-    #
-    # Candidate actions identify the type of retention review that
-    # may be appropriate based on the available evidence.
-    #
-    # These are NOT proven causal treatments.
-    # --------------------------------------------------------
+    # ========================================================
 
     if "candidate_action" in df.columns:
 
@@ -1511,13 +1754,13 @@ elif page == "🧠 Retention Intelligence":
 
         action_counts.columns = [
             "Candidate Action",
-            "Customers"
+            "Customers",
         ]
 
         st.dataframe(
             action_counts,
             width="stretch",
-            hide_index=True
+            hide_index=True,
         )
 
         st.caption(
@@ -1528,13 +1771,10 @@ elif page == "🧠 Retention Intelligence":
 
     st.divider()
 
-    # --------------------------------------------------------
+
+    # ========================================================
     # DECISION INTERPRETATION
-    # --------------------------------------------------------
-    #
-    # This short explanation makes the complete business flow
-    # explicit without introducing another model.
-    # --------------------------------------------------------
+    # ========================================================
 
     st.subheader(
         "How Retention Intelligence Works"
@@ -1542,17 +1782,17 @@ elif page == "🧠 Retention Intelligence":
 
     st.markdown(
         """
-        **1. Predict** → Estimate the customer's churn probability.
+**1. Predict** → Estimate the customer's churn probability.
 
-        **2. Understand** → Identify observable behavioural deterioration.
+**2. Understand** → Identify observable behavioural deterioration.
 
-        **3. Assess Value** → Determine the customer's relative value tier.
+**3. Assess Value** → Determine the customer's relative value tier.
 
-        **4. Prioritize** → Combine risk, behaviour and value through
-        the retention rules.
+**4. Prioritize** → Combine risk, behaviour and value through
+the retention rules.
 
-        **5. Route** → Assign a candidate retention-review category.
-        """
+**5. Route** → Assign a candidate retention-review category.
+"""
     )
 
     st.info(
@@ -1562,6 +1802,7 @@ elif page == "🧠 Retention Intelligence":
         "retention prioritization."
     )
 
+
 # ============================================================
 # PAGE 5
 # AI RETENTION AGENT
@@ -1569,34 +1810,13 @@ elif page == "🧠 Retention Intelligence":
 
 elif page == "🤖 AI Retention Agent":
 
-    # --------------------------------------------------------
-    # PAGE HEADER
-    # --------------------------------------------------------
-    #
-    # The AI agent acts as the explanation and decision-support
-    # layer over the outputs generated by the analytical pipeline.
-    #
-    # ML Model
-    #     ↓
-    # Retention Intelligence
-    #     ↓
-    # AI Agent
-    #     ↓
-    # Business Explanation
-    # --------------------------------------------------------
-
     display_page_title(
         "🤖 AI Retention Agent",
-        "Ask questions about churn risk, customer behaviour and "
-        "retention priorities."
+        "Ask questions about churn risk, customer behaviour and retention priorities."
     )
 
     # --------------------------------------------------------
     # AGENT AVAILABILITY
-    # --------------------------------------------------------
-    #
-    # The dashboard remains usable even if the optional AI agent
-    # dependencies or configuration are unavailable.
     # --------------------------------------------------------
 
     if not AGENT_AVAILABLE:
@@ -1610,14 +1830,11 @@ elif page == "🤖 AI Retention Agent":
         ):
 
             st.code(
-                AGENT_ERROR or "Unknown error"
+                AGENT_ERROR
+                or "Unknown error"
             )
 
     else:
-
-        # ----------------------------------------------------
-        # AGENT STATUS
-        # ----------------------------------------------------
 
         st.success(
             "AI Retention Agent is ready."
@@ -1625,19 +1842,8 @@ elif page == "🤖 AI Retention Agent":
 
         st.write(
             "The agent explains ML churn-risk predictions using "
-            "behavioural evidence, customer value and retention "
-            "intelligence."
+            "behavioural evidence, customer value and retention intelligence."
         )
-
-        # ----------------------------------------------------
-        # AGENT ROLE
-        # ----------------------------------------------------
-        #
-        # The LLM does not replace the analytical pipeline.
-        #
-        # It consumes the prepared retention-intelligence outputs
-        # and converts them into business-oriented explanations.
-        # ----------------------------------------------------
 
         st.info(
             "The AI agent explains retention-intelligence outputs "
@@ -1646,21 +1852,10 @@ elif page == "🤖 AI Retention Agent":
             "or retention priority."
         )
 
-        # ----------------------------------------------------
-        # SAMPLE QUESTIONS
-        # ----------------------------------------------------
-        #
-        # The first two questions intentionally represent different
-        # business decisions:
-        #
-        # 1. Highest churn risk
-        #    → ML probability ranking
-        #
-        # 2. Highest retention priority
-        #    → Risk + value + behavioural business rules
-        #
-        # This distinction is central to the project's architecture.
-        # ----------------------------------------------------
+
+        # ====================================================
+        # EXAMPLE QUESTIONS
+        # ====================================================
 
         st.subheader(
             "Example Questions"
@@ -1677,12 +1872,16 @@ elif page == "🤖 AI Retention Agent":
 
         selected_question = st.selectbox(
             "Choose an example question",
-            ["Custom question"] + example_questions,
+            [
+                "Custom question"
+            ]
+            + example_questions,
         )
 
-        # ----------------------------------------------------
+
+        # ====================================================
         # QUESTION INPUT
-        # ----------------------------------------------------
+        # ====================================================
 
         if selected_question == "Custom question":
 
@@ -1703,13 +1902,10 @@ elif page == "🤖 AI Retention Agent":
                 f"Selected question: {question}"
             )
 
-        # ----------------------------------------------------
-        # SOURCE-OF-TRUTH NOTE
-        # ----------------------------------------------------
-        #
-        # This reinforces that the agent is an interpretation
-        # layer rather than an independent prediction engine.
-        # ----------------------------------------------------
+
+        # ====================================================
+        # SOURCE OF TRUTH
+        # ====================================================
 
         st.caption(
             "Source of truth: the retention-intelligence dataset "
@@ -1718,154 +1914,20 @@ elif page == "🤖 AI Retention Agent":
             "analytical logic."
         )
 
-        # ----------------------------------------------------
+
+        # ====================================================
         # ASK AGENT
-        # ----------------------------------------------------
+        # ====================================================
 
         if st.button(
             "🤖 Ask Retention Agent",
-            width="stretch"
+            width="stretch",
         ):
 
-            # ------------------------------------------------
-            # INPUT VALIDATION
-            # ------------------------------------------------
-
-            if not question or not question.strip():
-
-                st.warning(
-                    "Please enter a question."
-                )
-
-            else:
-
-                # ------------------------------------------------
-                # AGENT EXECUTION
-                # ------------------------------------------------
-                #
-                # The question is passed to the existing agent
-                # implementation. The dashboard does not perform
-                # separate ML calculations here.
-                # ------------------------------------------------
-
-                with st.spinner(
-                    "Analyzing customer intelligence..."
-                ):
-
-                    try:
-
-                        response = ask_agent(
-                            question.strip()
-                        )
-
-                        # ----------------------------------------
-                        # AGENT RESPONSE
-                        # ----------------------------------------
-
-                        st.subheader(
-                            "🧠 Agent Response"
-                        )
-
-                        st.write(
-                            response
-                        )
-
-                    except Exception as e:
-
-                        # ----------------------------------------
-                        # ERROR HANDLING
-                        # ----------------------------------------
-
-                        st.error(
-                            "The AI agent encountered an error."
-                        )
-
-                        st.code(
-                            str(e)
-                        )
-# ============================================================
-# PAGE 5
-# AI RETENTION AGENT
-# ============================================================
-
-elif page == "🤖 AI Retention Agent":
-
-    display_page_title(
-        "🤖 AI Retention Agent",
-        "Ask questions about customer churn, risk and retention actions."
-    )
-
-    if not AGENT_AVAILABLE:
-
-        st.warning(
-            "The AI agent could not be initialized."
-        )
-
-        with st.expander("Technical information"):
-
-            st.code(
-                AGENT_ERROR or "Unknown error"
-            )
-
-    else:
-
-        st.success(
-            "AI Retention Agent is ready."
-        )
-
-        st.write(
-            "The agent combines ML churn predictions, "
-            "behavioral intelligence and retention evidence."
-        )
-
-        # ----------------------------------------------------
-        # SAMPLE QUESTIONS
-        # ----------------------------------------------------
-
-        st.subheader("Example Questions")
-
-        example_questions = [
-            "Which customers are at very high churn risk?",
-            "Show me the highest priority customers.",
-            "What is the retention summary?",
-            "Analyze customer 2.",
-            "What behavioral signals indicate churn?",
-        ]
-
-        selected_question = st.selectbox(
-            "Choose an example question",
-            ["Custom question"] + example_questions,
-        )
-
-        if selected_question == "Custom question":
-
-            question = st.text_area(
-                "Ask the AI Retention Agent",
-                placeholder=(
-                    "Example: Which high-risk customers "
-                    "should the telecom company contact first?"
-                ),
-                height=120,
-            )
-
-        else:
-
-            question = selected_question
-
-            st.info(
-                f"Selected question: {question}"
-            )
-
-        # ----------------------------------------------------
-        # ASK AGENT
-        # ----------------------------------------------------
-
-        if st.button(
-            "🤖 Ask Retention Agent",
-            width="stretch"
-        ):
-
-            if not question or not question.strip():
+            if (
+                not question
+                or not question.strip()
+            ):
 
                 st.warning(
                     "Please enter a question."
@@ -1900,278 +1962,451 @@ elif page == "🤖 AI Retention Agent":
                         st.code(
                             str(e)
                         )
-                        
+
+
 # ============================================================
 # PAGE 6
 # RETENTION OPERATIONS
 # ============================================================
 
 elif page == "📈 Retention Operations":
+
     display_page_title(
         "📈 Retention Operations",
         "Turn retention intelligence into a prioritized action queue for the retention team."
     )
-    # --------------------------------------------------------
+
+
+    # ========================================================
     # PURPOSE
-    # --------------------------------------------------------
-    # This page represents the operational layer of the system.
-    #
-    # Retention Intelligence determines:
-    #   Risk + Behaviour + Value → Priority + Candidate Action
-    #
-    # This page focuses on what the retention team should review
-    # and how the identified workload is distributed.
-    #
-    # It intentionally does not repeat the analytical views from
-    # the Retention Intelligence page.
-    # --------------------------------------------------------
+    # ========================================================
 
     st.info(
-        "This page converts the retention-intelligence output into an "
-        "operational review queue. It helps the retention team understand "
-        "which customers require attention and what issue should be reviewed."
+        "This page converts the retention-intelligence output into "
+        "an operational review queue. It helps the retention team "
+        "understand which customers require attention and what issue "
+        "should be reviewed."
     )
 
-    # ========================================================
-    # 1. CUSTOMERS REQUIRING RETENTION FOCUS
-    # ========================================================
-
-    priority_1_df = df[
-        df["retention_priority"] == "Priority 1"
-    ].copy()
-
-    priority_2_df = df[
-        df["retention_priority"] == "Priority 2"
-    ].copy()
-
-    priority_focus_df = df[
-        df["retention_priority"].isin(
-            ["Priority 1", "Priority 2"]
-        )
-    ].copy()
-
-    priority_1_count = len(priority_1_df)
-    priority_2_count = len(priority_2_df)
-    priority_focus_count = len(priority_focus_df)
-
-    st.subheader("🎯 Customers Requiring Retention Focus")
-
-    m1, m2, m3 = st.columns(3)
-
-    with m1:
-        display_metric_card(
-            "Customers Requiring Attention",
-            f"{priority_focus_count:,}"
-        )
-
-    with m2:
-        display_metric_card(
-            "Priority 1",
-            f"{priority_1_count:,}"
-        )
-
-    with m3:
-        display_metric_card(
-            "Priority 2",
-            f"{priority_2_count:,}"
-        )
-
-    st.caption(
-        "Priority 1 and Priority 2 represent the current retention-focus "
-        "population. Priority is determined by the project's retention rules, "
-        "not by churn probability alone."
-    )
-
-    st.divider()
 
     # ========================================================
-    # 2. RETENTION ACTION QUEUE
+    # PRIORITY POPULATIONS
     # ========================================================
 
-    st.subheader("🚨 Retention Action Queue")
+    if "retention_priority" not in df.columns:
 
-    st.write(
-        "Use the filters below to identify customers requiring a specific "
-        "retention review."
-    )
-
-    f1, f2, f3 = st.columns(3)
-
-    with f1:
-        selected_priority = st.selectbox(
-            "Retention Priority",
-            ["All", "Priority 1", "Priority 2"]
+        st.warning(
+            "Retention priority information is not available."
         )
 
-    with f2:
-        action_options = sorted(
-            priority_focus_df["candidate_action"]
-            .dropna()
-            .astype(str)
-            .unique()
-            .tolist()
+    else:
+
+        priority_1_df = df[
+            df["retention_priority"]
+            == "Priority 1"
+        ].copy()
+
+        priority_2_df = df[
+            df["retention_priority"]
+            == "Priority 2"
+        ].copy()
+
+        priority_focus_df = df[
+            df["retention_priority"]
+            .isin(
+                [
+                    "Priority 1",
+                    "Priority 2",
+                ]
+            )
+        ].copy()
+
+        priority_1_count = len(
+            priority_1_df
         )
 
-        selected_action = st.selectbox(
-            "Candidate Action",
-            ["All"] + action_options
+        priority_2_count = len(
+            priority_2_df
         )
 
-    with f3:
-        selected_value = st.selectbox(
-            "Customer Value",
-            ["All", "Lower", "Moderate", "Higher", "Highest"]
+        priority_focus_count = len(
+            priority_focus_df
         )
 
-    action_queue_df = priority_focus_df.copy()
 
-    if selected_priority != "All":
-        action_queue_df = action_queue_df[
-            action_queue_df["retention_priority"]
-            == selected_priority
+        # ====================================================
+        # CUSTOMERS REQUIRING RETENTION FOCUS
+        # ====================================================
+
+        st.subheader(
+            "🎯 Customers Requiring Retention Focus"
+        )
+
+        m1, m2, m3 = st.columns(3)
+
+        with m1:
+
+            display_metric_card(
+                "Customers Requiring Attention",
+                f"{priority_focus_count:,}"
+            )
+
+        with m2:
+
+            display_metric_card(
+                "Priority 1",
+                f"{priority_1_count:,}"
+            )
+
+        with m3:
+
+            display_metric_card(
+                "Priority 2",
+                f"{priority_2_count:,}"
+            )
+
+        st.caption(
+            "Priority 1 and Priority 2 represent the current "
+            "retention-focus population. Priority is determined "
+            "by the project's retention rules, not by churn "
+            "probability alone."
+        )
+
+        st.divider()
+
+
+        # ====================================================
+        # RETENTION ACTION QUEUE
+        # ====================================================
+
+        st.subheader(
+            "🚨 Retention Action Queue"
+        )
+
+        st.write(
+            "Use the filters below to identify customers "
+            "requiring a specific retention review."
+        )
+
+        f1, f2, f3 = st.columns(3)
+
+        with f1:
+
+            selected_priority = st.selectbox(
+                "Retention Priority",
+                [
+                    "All",
+                    "Priority 1",
+                    "Priority 2",
+                ],
+            )
+
+        with f2:
+
+            if "candidate_action" in priority_focus_df.columns:
+
+                action_options = sorted(
+                    priority_focus_df[
+                        "candidate_action"
+                    ]
+                    .dropna()
+                    .astype(str)
+                    .unique()
+                    .tolist()
+                )
+
+            else:
+
+                action_options = []
+
+            selected_action = st.selectbox(
+                "Candidate Action",
+                [
+                    "All"
+                ]
+                + action_options,
+            )
+
+        with f3:
+
+            selected_value = st.selectbox(
+                "Customer Value",
+                [
+                    "All",
+                    "Lower",
+                    "Moderate",
+                    "Higher",
+                    "Highest",
+                ],
+            )
+
+
+        action_queue_df = (
+            priority_focus_df
+            .copy()
+        )
+
+
+        if selected_priority != "All":
+
+            action_queue_df = (
+                action_queue_df[
+                    action_queue_df[
+                        "retention_priority"
+                    ]
+                    == selected_priority
+                ]
+            )
+
+
+        if (
+            selected_action != "All"
+            and "candidate_action"
+            in action_queue_df.columns
+        ):
+
+            action_queue_df = (
+                action_queue_df[
+                    action_queue_df[
+                        "candidate_action"
+                    ]
+                    == selected_action
+                ]
+            )
+
+
+        if (
+            selected_value != "All"
+            and "value_tier"
+            in action_queue_df.columns
+        ):
+
+            action_queue_df = (
+                action_queue_df[
+                    action_queue_df[
+                        "value_tier"
+                    ]
+                    == selected_value
+                ]
+            )
+
+
+        # Highest-risk customers first.
+
+        action_queue_df = (
+            action_queue_df
+            .sort_values(
+                "predicted_churn_risk",
+                ascending=False,
+            )
+        )
+
+
+        st.write(
+            f"**{len(action_queue_df):,} customers** "
+            "match the current retention-review filters."
+        )
+
+
+        queue_columns = [
+            "id",
+            "predicted_churn_risk",
+            "behavioral_state",
+            "value_tier",
+            "retention_priority",
+            "candidate_action",
         ]
 
-    if selected_action != "All":
-        action_queue_df = action_queue_df[
-            action_queue_df["candidate_action"]
-            == selected_action
+        queue_columns = [
+            col
+            for col in queue_columns
+            if col in action_queue_df.columns
         ]
 
-    if selected_value != "All":
-        action_queue_df = action_queue_df[
-            action_queue_df["value_tier"]
-            == selected_value
-        ]
-
-    # Highest-risk customers appear first within the selected queue.
-    action_queue_df = action_queue_df.sort_values(
-        "predicted_churn_risk",
-        ascending=False
-    )
-
-    st.write(
-        f"**{len(action_queue_df):,} customers** match the current "
-        "retention-review filters."
-    )
-
-    queue_columns = [
-        "id",
-        "predicted_churn_risk",
-        "behavioral_state",
-        "value_tier",
-        "retention_priority",
-        "candidate_action",
-    ]
-
-    queue_columns = [
-        col
-        for col in queue_columns
-        if col in action_queue_df.columns
-    ]
-
-    queue_display_df = action_queue_df[
-        queue_columns
-    ].copy()
-
-    if "predicted_churn_risk" in queue_display_df.columns:
-        queue_display_df["predicted_churn_risk"] = (
-            queue_display_df["predicted_churn_risk"]
-            .apply(format_probability)
+        queue_display_df = (
+            action_queue_df[
+                queue_columns
+            ]
+            .copy()
         )
 
-    st.dataframe(
-        queue_display_df,
-        width="stretch",
-        hide_index=True,
-    )
 
-    # Allow the operational queue to be exported.
-    if not action_queue_df.empty:
+        if (
+            "predicted_churn_risk"
+            in queue_display_df.columns
+        ):
 
-        action_queue_csv = action_queue_df.to_csv(
-            index=False
+            queue_display_df[
+                "predicted_churn_risk"
+            ] = (
+                queue_display_df[
+                    "predicted_churn_risk"
+                ]
+                .apply(
+                    format_probability
+                )
+            )
+
+
+        st.dataframe(
+            queue_display_df,
+            width="stretch",
+            hide_index=True,
         )
 
-        st.download_button(
-            "⬇️ Download Retention Action Queue",
-            data=action_queue_csv,
-            file_name="retention_action_queue.csv",
-            mime="text/csv",
+
+        # ====================================================
+        # DOWNLOAD
+        # ====================================================
+
+        if not action_queue_df.empty:
+
+            action_queue_csv = (
+                action_queue_df
+                .to_csv(
+                    index=False
+                )
+            )
+
+            st.download_button(
+                "⬇️ Download Retention Action Queue",
+                data=action_queue_csv,
+                file_name="retention_action_queue.csv",
+                mime="text/csv",
+            )
+
+        st.divider()
+
+
+        # ====================================================
+        # RETENTION WORKLOAD
+        # ====================================================
+
+        st.subheader(
+            "📊 Retention Workload"
         )
 
-    st.divider()
-
-    # ========================================================
-    # 3. RETENTION WORKLOAD
-    # ========================================================
-
-    st.subheader("📊 Retention Workload")
-
-    st.write(
-        "Shows the types of retention reviews currently represented "
-        "within the Priority 1 + Priority 2 population."
-    )
-
-    workload_df = (
-        priority_focus_df["candidate_action"]
-        .value_counts()
-        .rename_axis("candidate_action")
-        .reset_index(name="customers")
-    )
-
-    if not workload_df.empty:
-
-        st.bar_chart(
-            workload_df.set_index("candidate_action")["customers"],
-            horizontal=True,
+        st.write(
+            "Shows the types of retention reviews currently "
+            "represented within the Priority 1 + Priority 2 population."
         )
 
-    st.caption(
-        "Candidate actions are review categories generated by the "
-        "retention-intelligence layer. They are not proven causal treatments."
-    )
+        if "candidate_action" in priority_focus_df.columns:
 
-    st.divider()
+            workload_df = (
+                priority_focus_df[
+                    "candidate_action"
+                ]
+                .value_counts()
+                .rename_axis(
+                    "Candidate Action"
+                )
+                .reset_index(
+                    name="Customers"
+                )
+            )
 
-    # ========================================================
-    # 4. PRIORITY CUSTOMER ARPU EXPOSURE
-    # ========================================================
+            if not workload_df.empty:
 
-    st.subheader("💰 Priority Customer ARPU Exposure")
+                fig_workload = px.bar(
+                    workload_df,
+                    x="Customers",
+                    y="Candidate Action",
+                    orientation="h",
+                    title="Retention Review Workload",
+                    text="Customers",
+                )
 
-    p1_arpu = priority_1_df["arpu_8"].sum()
-    p2_arpu = priority_2_df["arpu_8"].sum()
+                fig_workload.update_traces(
+                    textposition="outside",
+                    cliponaxis=False,
+                )
 
-    a1, a2 = st.columns(2)
+                fig_workload.update_layout(
+                    showlegend=False,
+                    plot_bgcolor="white",
+                    paper_bgcolor="white",
+                    height=420,
+                    margin=dict(
+                        t=70,
+                        b=40,
+                        l=50,
+                        r=70,
+                    ),
+                )
 
-    with a1:
-        display_metric_card(
-            "Priority 1 Month-8 ARPU Exposure",
-            f"₹{p1_arpu:,.0f}"
+                st.plotly_chart(
+                    fig_workload,
+                    width="stretch"
+                )
+
+        st.caption(
+            "Candidate actions are review categories generated by "
+            "the retention-intelligence layer. They are not proven "
+            "causal treatments."
         )
 
-    with a2:
-        display_metric_card(
-            "Priority 2 Month-8 ARPU Exposure",
-            f"₹{p2_arpu:,.0f}"
+        st.divider()
+
+
+        # ====================================================
+        # PRIORITY CUSTOMER ARPU EXPOSURE
+        # ====================================================
+
+        if "arpu_8" in df.columns:
+
+            st.subheader(
+                "💰 Priority Customer ARPU Exposure"
+            )
+
+            p1_arpu = safe_float(
+                priority_1_df[
+                    "arpu_8"
+                ].sum()
+            )
+
+            p2_arpu = safe_float(
+                priority_2_df[
+                    "arpu_8"
+                ].sum()
+            )
+
+            a1, a2 = st.columns(2)
+
+            with a1:
+
+                display_metric_card(
+                    "Priority 1 Month-8 ARPU Exposure",
+                    f"₹{p1_arpu:,.0f}"
+                )
+
+            with a2:
+
+                display_metric_card(
+                    "Priority 2 Month-8 ARPU Exposure",
+                    f"₹{p2_arpu:,.0f}"
+                )
+
+            st.caption(
+                "ARPU exposure represents observed Month-8 ARPU "
+                "within the priority population. It is not an "
+                "estimate of revenue loss, profit, customer lifetime "
+                "value, or revenue saved."
+            )
+
+            st.divider()
+
+
+        # ====================================================
+        # RETENTION OPERATIONS PLAYBOOK
+        # ====================================================
+
+        st.subheader(
+            "🧭 Retention Operations Playbook"
         )
 
-    st.caption(
-        "ARPU exposure represents observed Month-8 ARPU within the "
-        "priority population. It is not an estimate of revenue loss, "
-        "profit, customer lifetime value, or revenue saved."
-    )
-
-    st.divider()
-
-    # ========================================================
-    # 5. RETENTION OPERATIONS PLAYBOOK
-    # ========================================================
-
-    st.subheader("🧭 Retention Operations Playbook")
-
-    st.markdown(
-        """
+        st.markdown(
+            """
 ### From prediction to action
 
 **1. Identify risk**
@@ -2197,22 +2432,25 @@ elif page == "📈 Retention Operations":
 | **Priority 2** | Very-high-risk customers with lower/moderate value but strong behavioural deterioration |
 | **Priority 3** | Outside the current focused retention queue |
 """
-    )
+        )
 
-    st.divider()
+        st.divider()
 
-    # ========================================================
-    # 6. OPERATIONAL READINESS
-    # ========================================================
 
-    st.subheader("⚙️ Operational Readiness")
+        # ====================================================
+        # OPERATIONAL READINESS
+        # ====================================================
 
-    r1, r2 = st.columns(2)
+        st.subheader(
+            "⚙️ Operational Readiness"
+        )
 
-    with r1:
+        r1, r2 = st.columns(2)
 
-        st.markdown(
-            """
+        with r1:
+
+            st.markdown(
+                """
 ### Current Prototype
 
 **Data mode:** Batch-based
@@ -2224,12 +2462,12 @@ retention-intelligence dataset.
 
 `Prepared Data → Churn Risk → Retention Intelligence → Action Queue`
 """
-        )
+            )
 
-    with r2:
+        with r2:
 
-        st.markdown(
-            """
+            st.markdown(
+                """
 ### Production Direction
 
 The same architecture can be connected to:
@@ -2242,22 +2480,24 @@ The same architecture can be connected to:
 
 `Customer Events → Feature Refresh → Model → Retention Queue`
 """
+            )
+
+        st.warning(
+            "The current prototype is not a real-time intervention system. "
+            "Production deployment would require scheduled or event-driven "
+            "data and model refresh mechanisms."
         )
 
-    st.warning(
-        "The current prototype is not a real-time intervention system. "
-        "Production deployment would require scheduled or event-driven "
-        "data and model refresh mechanisms."
-    )
 
-    # ========================================================
-    # FINAL BUSINESS MESSAGE
-    # ========================================================
+        # ====================================================
+        # FINAL BUSINESS MESSAGE
+        # ====================================================
 
-    st.success(
-        "Business flow: Predict churn → understand deterioration → "
-        "prioritize customers → route the retention review → support human action."
-    )
+        st.success(
+            "Business flow: Predict churn → understand deterioration → "
+            "prioritize customers → route the retention review → support human action."
+        )
+
 
 # ============================================================
 # FOOTER
