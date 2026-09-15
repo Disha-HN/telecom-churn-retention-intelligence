@@ -38,3 +38,13 @@ jobs:
           python -c "import pandas, numpy, sklearn, lightgbm, joblib, streamlit, plotly"
           python -c "from agent.tool import get_customer_profile"
           python -c "from agent.agent import ask_agent"
+
+      - name: Install testing dependencies
+        run: |
+          pip install pytest pytest-cov
+
+      - name: Run automated tests
+        env:
+          GROQ_API_KEY: test-key
+        run: |
+          pytest -v --cov=agent --cov=app --cov-report=term-missing
